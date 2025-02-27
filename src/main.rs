@@ -11,12 +11,10 @@
 
 use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
-use lib::{
-    js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
-    js_tostring, JS_STRICT,
+use mujs_one::{
+  js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
+  js_tostring, JS_STRICT,
 };
-mod lib;
-
 unsafe extern "C" fn log(j: *mut js_State) {
     let name = js_tostring(j as *mut js_State, JS_STRICT.try_into().unwrap());
     let s = CStr::from_ptr(name).to_string_lossy();
