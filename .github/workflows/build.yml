@@ -40,5 +40,4 @@ jobs:
         run: |
           cargo --version
           rustc -Vv
-          llvm-config --version
           cargo run

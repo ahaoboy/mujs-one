@@ -1,18 +1,21 @@
-#![feature(c_variadic, extern_types)]
-#[allow(unsafe_op_in_unsafe_fn)]
-#[allow(unused_variables)]
-#[allow(unused_labels)]
-#[allow(static_mut_refs)]
-#[allow(path_statements)]
+#![feature(c_variadic, extern_types, label_break_value)]
+#![allow(
+  dead_code,
+  mutable_transmutes,
+  non_camel_case_types,
+  non_snake_case,
+  non_upper_case_globals,
+  unused_assignments,
+  unused_mut
+)]
 
 use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
-
-use one::{
+use lib::{
     js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
     js_tostring, JS_STRICT,
 };
-mod one;
+mod lib;
 
 unsafe extern "C" fn log(j: *mut js_State) {
     let name = js_tostring(j as *mut js_State, JS_STRICT.try_into().unwrap());
