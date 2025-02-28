@@ -2,8 +2,12 @@
 name = "mujs-one"
 version = "0.1.0"
 edition = "2021"
-
-[lib]
+license = "MIT"
+description = "mujs-one"
+repository = "https://github.com/ahaoboy/mujs-one"
+homepage = "https://github.com/ahaoboy/mujs-one"
+authors = ["ahaoboy"]
+include = ["/src", "/Cargo.toml", "/README.md"]
 
 [dependencies]
-libc="*"
+libc = "0.2"
