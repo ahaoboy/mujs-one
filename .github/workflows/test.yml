@@ -58,5 +58,5 @@ jobs:
           npm run build
 
           node dist/run.js
-          mujs dist/run.js
           mujs-one dist/run.js
+          mujs dist/run.js

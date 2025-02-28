@@ -1,20 +1,20 @@
 #![feature(c_variadic, extern_types, label_break_value)]
 #![allow(
-  dead_code,
-  mutable_transmutes,
-  non_camel_case_types,
-  non_snake_case,
-  non_upper_case_globals,
-  unused_assignments,
-  unused_mut
+    dead_code,
+    mutable_transmutes,
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    unused_assignments,
+    unused_mut
 )]
 
+use mujs_one::{
+    js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
+    js_tostring,
+};
 use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
-use mujs_one::{
-  js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
-  js_tostring
-};
 
 unsafe extern "C" fn print(j: *mut js_State) {
     let name = js_tostring(j as *mut js_State, -1);
@@ -34,14 +34,14 @@ fn eval_code(code: &str) -> String {
         js_dostring(j, s.as_ptr() as *const i8);
         let p = js_tostring(j, -1);
         let s = CStr::from_ptr(p).to_string_lossy();
-        return s.to_string();
+        s.to_string()
     }
 }
 fn main() {
     if let Some(path) = std::env::args().nth(1) {
-      let buffer = std::fs::read_to_string(&path).expect("failed to read file");
-      eval_code(&buffer);
-      return;
+        let buffer = std::fs::read_to_string(&path).expect("failed to read file");
+        eval_code(&buffer);
+        return;
     }
     println!("mujs-one <PATH>");
 }

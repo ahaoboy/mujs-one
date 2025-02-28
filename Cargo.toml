@@ -1,6 +1,6 @@
 [package]
 name = "mujs-one"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "mujs-one"
@@ -12,9 +12,9 @@ include = ["/src", "/Cargo.toml", "/README.md"]
 [dependencies]
 libc = "0.2"
 
-# [profile.release]
-# debug = false
-# lto = true
-# strip = true
-# opt-level = 3
-# codegen-units = 1
+[profile.release]
+debug = false
+lto = true
+strip = true
+opt-level = 3
+codegen-units = 1

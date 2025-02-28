@@ -1,12 +1,12 @@
 #![feature(c_variadic, extern_types, label_break_value)]
 #![allow(
-  dead_code,
-  mutable_transmutes,
-  non_camel_case_types,
-  non_snake_case,
-  non_upper_case_globals,
-  unused_assignments,
-  unused_mut
+    dead_code,
+    mutable_transmutes,
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    unused_assignments,
+    unused_mut
 )]
 extern "C" {
     pub type _IO_wide_data;
@@ -8897,8 +8897,8 @@ pub unsafe extern "C" fn js_putc(
     }
     let fresh26 = (*sb).n;
     (*sb).n += 1;
-    if fresh26 < 64{
-      (*sb).s[fresh26 as usize] = c as libc::c_char;
+    if fresh26 < 64 {
+        (*sb).s[fresh26 as usize] = c as libc::c_char;
     }
 }
 #[no_mangle]
@@ -21048,7 +21048,8 @@ pub unsafe extern "C" fn js_runeat(
         if i == -(2 as libc::c_int) {
             return 0xd800 as libc::c_int + ((rune - 0x10000 as libc::c_int) >> 10 as libc::c_int);
         } else {
-            return 0xdc00 as libc::c_int + ((rune - 0x10000 as libc::c_int) & 0x3ff as libc::c_int);
+            return 0xdc00 as libc::c_int
+                + ((rune - 0x10000 as libc::c_int) & 0x3ff as libc::c_int);
         }
     }
     rune
