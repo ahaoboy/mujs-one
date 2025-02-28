@@ -8897,7 +8897,9 @@ pub unsafe extern "C" fn js_putc(
     }
     let fresh26 = (*sb).n;
     (*sb).n += 1;
-    (*sb).s[fresh26 as usize] = c as libc::c_char;
+    if fresh26 < 64{
+      (*sb).s[fresh26 as usize] = c as libc::c_char;
+    }
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_puts(
