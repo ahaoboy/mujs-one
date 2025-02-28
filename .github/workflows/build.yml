@@ -41,8 +41,9 @@ jobs:
         run: |
           cargo --version
           rustc -Vv
-          cargo run
-          cargo install .
+          echo "print(1+1)" >> test.js
+
+          cargo run test.js
           cargo install --path .
 
       - name: install mujs
