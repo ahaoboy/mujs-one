@@ -15,7 +15,8 @@ use mujs_one::{
   js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
   js_tostring, JS_STRICT,
 };
-unsafe extern "C" fn log(j: *mut js_State) {
+
+unsafe extern "C" fn print(j: *mut js_State) {
     let name = js_tostring(j as *mut js_State, JS_STRICT.try_into().unwrap());
     let s = CStr::from_ptr(name).to_string_lossy();
     println!("{}", s);
@@ -25,8 +26,8 @@ unsafe extern "C" fn log(j: *mut js_State) {
 fn eval_code(code: &str) -> String {
     unsafe {
         let j = js_newstate(None, null_mut(), JS_STRICT.try_into().unwrap());
-        let log_fn: Option<unsafe extern "C" fn(*mut js_State)> = Some(log);
-        let log_name = CString::new("log").unwrap();
+        let log_fn: Option<unsafe extern "C" fn(*mut js_State)> = Some(print);
+        let log_name = CString::new("print").unwrap();
         js_newcfunction(j as *mut js_State, log_fn, log_name.as_ptr(), 1);
         js_setglobal(j as *mut js_State, log_name.as_ptr());
         let s: CString = CString::new(code).unwrap();
@@ -37,6 +38,9 @@ fn eval_code(code: &str) -> String {
     }
 }
 fn main() {
-    let code = "log(1+1)";
-    eval_code(code);
+    if let Some(path) = std::env::args().nth(1) {
+      let buffer = std::fs::read_to_string(&path).expect("failed to read file");
+      eval_code(&buffer);
+    }
+    println!("mujs-one <PATH>");
 }

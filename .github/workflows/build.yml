@@ -21,10 +21,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - target: x86_64-apple-darwin
-            os: macos-13
-          - target: aarch64-apple-darwin
-            os: macos-latest
+          # - target: x86_64-apple-darwin
+          #   os: macos-13
+          # - target: aarch64-apple-darwin
+          #   os: macos-latest
           # - target: x86_64-pc-windows-gnu
           #   os: windows-latest
           - target: x86_64-unknown-linux-gnu
@@ -35,10 +35,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          rustflags: '-A warnings'
-          toolchain: 'nightly-2022-08-08'
+          rustflags: "-A warnings"
+          toolchain: "nightly-2022-08-08"
       - name: build-${{ matrix.target }}
         run: |
           cargo --version
           rustc -Vv
           cargo run
+          cargo install .
+          cargo install --path .
+
+      - name: install mujs
+        uses: ahaoboy/easy-setup@v1
+        with:
+          url: https://github.com/ahaoboy/mujs-build
+
+      - name: bench
+        run: |
+          git clone https://github.com/ahaoboy/js-engine-benchmark
+          cd js-engine-benchmark
+          npm run build
+
+          node dist/run.js
+          mujs dist/run.js
+          mujs-one dist/run.js
