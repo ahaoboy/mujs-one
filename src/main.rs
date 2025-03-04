@@ -18,7 +18,7 @@ use std::ptr::null_mut;
 
 unsafe extern "C" fn print(j: *mut js_State) {
     let name = js_tostring(j as *mut js_State, -1);
-    let s = CStr::from_ptr(name).to_string_lossy();
+    let s = CStr::from_ptr(name).to_str().unwrap();
     println!("{}", s);
     js_pushundefined(j as *mut js_State);
 }

@@ -9,8 +9,6 @@
     unused_mut
 )]
 
-use compact_str::CompactString;
-
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -818,7 +816,7 @@ pub type js_OpCode = libc::c_uint;
 #[derive(Clone)]
 #[repr(C)]
 pub struct js_Buffer {
-    pub s: CompactString,
+    pub s: Vec<libc::c_int>,
 }
 
 pub type time_t = __time_t;
@@ -8883,11 +8881,11 @@ pub unsafe extern "C" fn js_putc(
     let mut sb: *mut js_Buffer = *sbp;
     if sb.is_null() {
         sb = Box::into_raw(Box::new(js_Buffer {
-            s: CompactString::with_capacity(64),
+            s: Vec::with_capacity(64),
         }));
         *sbp = sb;
     }
-    (*sb).s.push(c as u8 as char);
+    (*sb).s.push(c);
 }
 
 #[no_mangle]
