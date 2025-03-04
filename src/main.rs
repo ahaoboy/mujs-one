@@ -23,6 +23,8 @@ unsafe extern "C" fn print(j: *mut js_State) {
     js_pushundefined(j as *mut js_State);
 }
 
+const CONSOLE_JS: &str = "var console = { log: print, debug: print, warn: print, error: print };";
+
 fn eval_code(code: &str) -> String {
     unsafe {
         let j = js_newstate(None, null_mut(), 0);
@@ -30,6 +32,8 @@ fn eval_code(code: &str) -> String {
         let log_name = CString::new("print").unwrap();
         js_newcfunction(j as *mut js_State, log_fn, log_name.as_ptr(), 1);
         js_setglobal(j as *mut js_State, log_name.as_ptr());
+        let s: CString = CString::new(CONSOLE_JS).unwrap();
+        js_dostring(j, s.as_ptr() as *const i8);
         let s: CString = CString::new(code).unwrap();
         js_dostring(j, s.as_ptr() as *const i8);
         let p = js_tostring(j, -1);
