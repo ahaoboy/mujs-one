@@ -49,7 +49,9 @@ jobs:
       - name: install mujs
         uses: ahaoboy/easy-setup@v1
         with:
-          url: https://github.com/ahaoboy/mujs-build
+          url: |-
+            https://github.com/ahaoboy/mujs-build
+            https://github.com/pnpm/pnpm
 
       - name: bench
         run: |
@@ -60,3 +62,15 @@ jobs:
           node dist/run.js
           mujs-one dist/run.js
           mujs dist/run.js
+
+      - name: react
+        run: |
+          git clone https://github.com/ahaoboy/mujs-react
+          cd mujs-react
+          pnpm install
+          pnpm run build
+
+          mujs-one es5/index.js
+          mujs-one es5/bench.js
+          mujs es5/index.js
+          mujs es5/bench.js

@@ -11,6 +11,7 @@ include = ["/src", "/Cargo.toml", "/README.md"]
 
 [dependencies]
 libc = "0.2"
+compact_str = "0.9"
 
 [profile.release]
 debug = false

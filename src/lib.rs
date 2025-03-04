@@ -8,6 +8,9 @@
     unused_assignments,
     unused_mut
 )]
+
+use compact_str::CompactString;
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -812,13 +815,12 @@ pub const L_NWORD: C2RustUnnamed_18 = 263;
 pub const L_WORD: C2RustUnnamed_18 = 262;
 pub const REG_NEWLINE: C2RustUnnamed_16 = 2;
 pub type js_OpCode = libc::c_uint;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct js_Buffer {
-    pub n: libc::c_int,
-    pub m: libc::c_int,
-    pub s: [libc::c_char; 64],
+    pub s: CompactString,
 }
+
 pub type time_t = __time_t;
 pub type __time_t = libc::c_long;
 pub type __suseconds_t = libc::c_long;
@@ -8157,7 +8159,7 @@ unsafe extern "C" fn jsB_Function(mut J: *mut js_State) {
         J,
         b"[string]\0" as *const u8 as *const libc::c_char,
         if !sb.is_null() {
-            ((*sb).s).as_mut_ptr()
+            ((*sb).s).as_mut_ptr() as *const libc::c_char
         } else {
             std::ptr::null_mut::<libc::c_char>()
         },
@@ -8209,7 +8211,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
             b") { [byte code] }\0" as *const u8 as *const libc::c_char,
         );
         js_putc(J, &mut sb, 0 as libc::c_int);
-        js_pushstring(J, ((*sb).s).as_mut_ptr());
+        js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
         js_endtry(J);
         js_free(J, sb as *mut libc::c_void);
     } else if (*self_0).type_0 as libc::c_uint == JS_CCFUNCTION as libc::c_int as libc::c_uint {
@@ -8229,7 +8231,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
             b"() { [native code] }\0" as *const u8 as *const libc::c_char,
         );
         js_putc(J, &mut sb, 0 as libc::c_int);
-        js_pushstring(J, ((*sb).s).as_mut_ptr());
+        js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
         js_endtry(J);
         js_free(J, sb as *mut libc::c_void);
     } else {
@@ -8871,6 +8873,7 @@ pub unsafe extern "C" fn js_freestate(mut J: *mut js_State) {
         0 as libc::c_int,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn js_putc(
     mut J: *mut js_State,
@@ -8879,28 +8882,14 @@ pub unsafe extern "C" fn js_putc(
 ) {
     let mut sb: *mut js_Buffer = *sbp;
     if sb.is_null() {
-        sb = js_malloc(
-            J,
-            ::core::mem::size_of::<js_Buffer>() as libc::c_ulong as libc::c_int,
-        ) as *mut js_Buffer;
-        (*sb).n = 0 as libc::c_int;
-        (*sb).m = ::core::mem::size_of::<[libc::c_char; 64]>() as libc::c_ulong as libc::c_int;
-        *sbp = sb;
-    } else if (*sb).n == (*sb).m {
-        (*sb).m *= 2 as libc::c_int;
-        sb = js_realloc(
-            J,
-            sb as *mut libc::c_void,
-            (*sb).m + 8 as libc::c_ulong as libc::c_int,
-        ) as *mut js_Buffer;
+        sb = Box::into_raw(Box::new(js_Buffer {
+            s: CompactString::with_capacity(64),
+        }));
         *sbp = sb;
     }
-    let fresh26 = (*sb).n;
-    (*sb).n += 1;
-    if fresh26 < 64 {
-        (*sb).s[fresh26 as usize] = c as libc::c_char;
-    }
+    (*sb).s.push(c as u8 as char);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn js_puts(
     mut J: *mut js_State,
@@ -11323,7 +11312,7 @@ unsafe extern "C" fn Np_toString(mut J: *mut js_State) {
         }
     }
     js_putc(J, &mut sb, 0 as libc::c_int);
-    js_pushstring(J, ((*sb).s).as_mut_ptr());
+    js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
     js_endtry(J);
     js_free(J, sb as *mut libc::c_void);
 }
@@ -12746,7 +12735,7 @@ unsafe extern "C" fn fmtobject(
             break;
         }
         if filterprop(J, key) != 0 {
-            save = (**sb).n;
+            save = (**sb).s.len() as libc::c_int;
             if n != 0 {
                 js_putc(J, sb, ',' as i32);
             }
@@ -12760,7 +12749,7 @@ unsafe extern "C" fn fmtobject(
             }
             js_rot2(J);
             if fmtvalue(J, sb, key, gap, level + 1 as libc::c_int) == 0 {
-                (**sb).n = save;
+                 (**sb).s.set_len(save as usize);
             } else {
                 n += 1;
                 n;
