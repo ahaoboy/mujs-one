@@ -9,9 +9,7 @@
     unused_mut
 )]
 
-use compact_str::CompactStr;
-use std::ffi::c_char;
-use std::ptr;
+use compact_str::CompactString;
 
 extern "C" {
     pub type _IO_wide_data;
@@ -817,10 +815,10 @@ pub const L_NWORD: C2RustUnnamed_18 = 263;
 pub const L_WORD: C2RustUnnamed_18 = 262;
 pub const REG_NEWLINE: C2RustUnnamed_16 = 2;
 pub type js_OpCode = libc::c_uint;
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 #[repr(C)]
 pub struct js_Buffer {
-    pub s: CompactStr,
+    pub s: CompactString,
 }
 
 pub type time_t = __time_t;
@@ -8885,7 +8883,7 @@ pub unsafe extern "C" fn js_putc(
     let mut sb: *mut js_Buffer = *sbp;
     if sb.is_null() {
         sb = Box::into_raw(Box::new(js_Buffer {
-            s: CompactStr::new(),
+            s: CompactString::with_capacity(64),
         }));
         *sbp = sb;
     }
