@@ -17,8 +17,8 @@ use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
 
 unsafe extern "C" fn print(j: *mut js_State) {
-    let name = js_tostring(j as *mut js_State, -1);
-    let s = CStr::from_ptr(name).to_str().unwrap();
+    let ptr = js_tostring(j as *mut js_State, -1);
+    let s = CStr::from_ptr(ptr).to_str().expect("Invalid UTF-8 string");
     println!("{}", s);
     js_pushundefined(j as *mut js_State);
 }
