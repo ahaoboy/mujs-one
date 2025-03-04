@@ -8159,7 +8159,7 @@ unsafe extern "C" fn jsB_Function(mut J: *mut js_State) {
         J,
         b"[string]\0" as *const u8 as *const libc::c_char,
         if !sb.is_null() {
-            ((*sb).s).as_mut_ptr()
+            ((*sb).s).as_mut_ptr() as *const libc::c_char
         } else {
             std::ptr::null_mut::<libc::c_char>()
         },
@@ -8211,7 +8211,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
             b") { [byte code] }\0" as *const u8 as *const libc::c_char,
         );
         js_putc(J, &mut sb, 0 as libc::c_int);
-        js_pushstring(J, ((*sb).s).as_mut_ptr());
+        js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
         js_endtry(J);
         js_free(J, sb as *mut libc::c_void);
     } else if (*self_0).type_0 as libc::c_uint == JS_CCFUNCTION as libc::c_int as libc::c_uint {
@@ -8231,7 +8231,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
             b"() { [native code] }\0" as *const u8 as *const libc::c_char,
         );
         js_putc(J, &mut sb, 0 as libc::c_int);
-        js_pushstring(J, ((*sb).s).as_mut_ptr());
+        js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
         js_endtry(J);
         js_free(J, sb as *mut libc::c_void);
     } else {
@@ -11312,7 +11312,7 @@ unsafe extern "C" fn Np_toString(mut J: *mut js_State) {
         }
     }
     js_putc(J, &mut sb, 0 as libc::c_int);
-    js_pushstring(J, ((*sb).s).as_mut_ptr());
+    js_pushstring(J, ((*sb).s).as_mut_ptr() as *const libc::c_char);
     js_endtry(J);
     js_free(J, sb as *mut libc::c_void);
 }
@@ -12735,7 +12735,7 @@ unsafe extern "C" fn fmtobject(
             break;
         }
         if filterprop(J, key) != 0 {
-            save = (**sb).n;
+            save = (**sb).s.len() as libc::c_int;
             if n != 0 {
                 js_putc(J, sb, ',' as i32);
             }
@@ -12749,7 +12749,7 @@ unsafe extern "C" fn fmtobject(
             }
             js_rot2(J);
             if fmtvalue(J, sb, key, gap, level + 1 as libc::c_int) == 0 {
-                (**sb).n = save;
+                 (**sb).s.set_len(save as usize);
             } else {
                 n += 1;
                 n;
