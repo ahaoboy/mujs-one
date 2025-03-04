@@ -8,6 +8,11 @@
     unused_assignments,
     unused_mut
 )]
+
+use compact_str::CompactStr;
+use std::ffi::c_char;
+use std::ptr;
+
 extern "C" {
     pub type _IO_wide_data;
     pub type _IO_codecvt;
@@ -815,10 +820,9 @@ pub type js_OpCode = libc::c_uint;
 #[derive(Copy, Clone)]
 #[repr(C)]
 pub struct js_Buffer {
-    pub n: libc::c_int,
-    pub m: libc::c_int,
-    pub s: [libc::c_char; 64],
+    pub s: CompactStr,
 }
+
 pub type time_t = __time_t;
 pub type __time_t = libc::c_long;
 pub type __suseconds_t = libc::c_long;
@@ -8871,6 +8875,7 @@ pub unsafe extern "C" fn js_freestate(mut J: *mut js_State) {
         0 as libc::c_int,
     );
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn js_putc(
     mut J: *mut js_State,
@@ -8879,28 +8884,14 @@ pub unsafe extern "C" fn js_putc(
 ) {
     let mut sb: *mut js_Buffer = *sbp;
     if sb.is_null() {
-        sb = js_malloc(
-            J,
-            ::core::mem::size_of::<js_Buffer>() as libc::c_ulong as libc::c_int,
-        ) as *mut js_Buffer;
-        (*sb).n = 0 as libc::c_int;
-        (*sb).m = ::core::mem::size_of::<[libc::c_char; 64]>() as libc::c_ulong as libc::c_int;
-        *sbp = sb;
-    } else if (*sb).n == (*sb).m {
-        (*sb).m *= 2 as libc::c_int;
-        sb = js_realloc(
-            J,
-            sb as *mut libc::c_void,
-            (*sb).m + 8 as libc::c_ulong as libc::c_int,
-        ) as *mut js_Buffer;
+        sb = Box::into_raw(Box::new(js_Buffer {
+            s: CompactStr::new(),
+        }));
         *sbp = sb;
     }
-    let fresh26 = (*sb).n;
-    (*sb).n += 1;
-    if fresh26 < 64 {
-        (*sb).s[fresh26 as usize] = c as libc::c_char;
-    }
+    (*sb).s.push(c as u8 as char);
 }
+
 #[no_mangle]
 pub unsafe extern "C" fn js_puts(
     mut J: *mut js_State,
