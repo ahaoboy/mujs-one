@@ -1,4 +1,4 @@
-#![feature(c_variadic, extern_types, label_break_value)]
+#![feature(c_variadic, extern_types)]
 #![allow(
     dead_code,
     mutable_transmutes,
@@ -6,7 +6,30 @@
     non_snake_case,
     non_upper_case_globals,
     unused_assignments,
-    unused_mut
+    unused_mut,
+    static_mut_refs,
+    path_statements,
+    unused_variables,
+    unused_labels,
+    clippy::useless_transmute,
+    clippy::missing_safety_doc,
+    clippy::match_wildcard_for_single_variants,
+    clippy::needless_pass_by_ref_mut,
+    clippy::unnecessary_cast,
+    clippy::unnecessary_mut_passed,
+    clippy::no_effect,
+    clippy::if_same_then_else,
+    clippy::legacy_numeric_constants,
+    clippy::while_immutable_condition,
+    clippy::unnecessary_unwrap,
+    clippy::while_immutable_condition,
+    clippy::wildcard_in_or_patterns,
+    clippy::comparison_chain,
+    clippy::only_used_in_recursion,
+    clippy::approx_constant,
+    clippy::needless_late_init,
+    clippy::nonminimal_bool,
+    clippy::unnecessary_cast
 )]
 
 use mujs_one::{

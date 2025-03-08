@@ -1,4 +1,4 @@
-#![feature(c_variadic, extern_types, label_break_value)]
+#![feature(c_variadic, extern_types)]
 #![allow(
     dead_code,
     mutable_transmutes,
@@ -6,7 +6,30 @@
     non_snake_case,
     non_upper_case_globals,
     unused_assignments,
-    unused_mut
+    unused_mut,
+    static_mut_refs,
+    path_statements,
+    unused_variables,
+    unused_labels,
+    clippy::useless_transmute,
+    clippy::missing_safety_doc,
+    clippy::match_wildcard_for_single_variants,
+    clippy::needless_pass_by_ref_mut,
+    clippy::unnecessary_cast,
+    clippy::unnecessary_mut_passed,
+    clippy::no_effect,
+    clippy::if_same_then_else,
+    clippy::legacy_numeric_constants,
+    clippy::while_immutable_condition,
+    clippy::unnecessary_unwrap,
+    clippy::while_immutable_condition,
+    clippy::wildcard_in_or_patterns,
+    clippy::comparison_chain,
+    clippy::only_used_in_recursion,
+    clippy::approx_constant,
+    clippy::needless_late_init,
+    clippy::nonminimal_bool,
+    clippy::unnecessary_cast
 )]
 
 extern "C" {
@@ -921,7 +944,7 @@ pub const Bit3: C2RustUnnamed_21 = 4;
 pub const Bit2: C2RustUnnamed_21 = 5;
 pub const Bit1: C2RustUnnamed_21 = 7;
 #[no_mangle]
-pub unsafe extern "C" fn js_getlength(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_getlength(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     let mut len: libc::c_int = 0;
     js_getproperty(J, idx, b"length\0" as *const u8 as *const libc::c_char);
     len = js_tointeger(J, -(1 as libc::c_int));
@@ -929,11 +952,7 @@ pub unsafe extern "C" fn js_getlength(mut J: *mut js_State, mut idx: libc::c_int
     len
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setlength(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut len: libc::c_int,
-) {
+pub unsafe extern "C" fn js_setlength(J: *mut js_State, idx: libc::c_int, len: libc::c_int) {
     js_pushnumber(J, len as libc::c_double);
     js_setproperty(
         J,
@@ -945,9 +964,9 @@ pub unsafe extern "C" fn js_setlength(
         b"length\0" as *const u8 as *const libc::c_char,
     );
 }
-unsafe extern "C" fn jsB_new_Array(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_Array(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     js_newarray(J);
     if top == 2 as libc::c_int {
         if js_isnumber(J, 1 as libc::c_int) != 0 {
@@ -971,9 +990,9 @@ unsafe extern "C" fn jsB_new_Array(mut J: *mut js_State) {
         }
     };
 }
-unsafe extern "C" fn Ap_concat(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_concat(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut n: libc::c_int = 0;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
@@ -1004,7 +1023,7 @@ unsafe extern "C" fn Ap_concat(mut J: *mut js_State) {
         i;
     }
 }
-unsafe extern "C" fn Ap_join(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_join(J: *mut js_State) {
     let mut out: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut r: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut sep: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -1095,7 +1114,7 @@ unsafe extern "C" fn Ap_join(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, out as *mut libc::c_void);
 }
-unsafe extern "C" fn Ap_pop(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_pop(J: *mut js_State) {
     let mut n: libc::c_int = 0;
     n = js_getlength(J, 0 as libc::c_int);
     if n > 0 as libc::c_int {
@@ -1107,9 +1126,9 @@ unsafe extern "C" fn Ap_pop(mut J: *mut js_State) {
         js_pushundefined(J);
     };
 }
-unsafe extern "C" fn Ap_push(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_push(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut n: libc::c_int = 0;
     n = js_getlength(J, 0 as libc::c_int);
     i = 1 as libc::c_int;
@@ -1124,7 +1143,7 @@ unsafe extern "C" fn Ap_push(mut J: *mut js_State) {
     js_setlength(J, 0 as libc::c_int, n);
     js_pushnumber(J, n as libc::c_double);
 }
-unsafe extern "C" fn Ap_reverse(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_reverse(J: *mut js_State) {
     let mut len: libc::c_int = 0;
     let mut middle: libc::c_int = 0;
     let mut lower: libc::c_int = 0;
@@ -1132,9 +1151,9 @@ unsafe extern "C" fn Ap_reverse(mut J: *mut js_State) {
     middle = len / 2 as libc::c_int;
     lower = 0 as libc::c_int;
     while lower != middle {
-        let mut upper: libc::c_int = len - lower - 1 as libc::c_int;
-        let mut haslower: libc::c_int = js_hasindex(J, 0 as libc::c_int, lower);
-        let mut hasupper: libc::c_int = js_hasindex(J, 0 as libc::c_int, upper);
+        let upper: libc::c_int = len - lower - 1 as libc::c_int;
+        let haslower: libc::c_int = js_hasindex(J, 0 as libc::c_int, lower);
+        let hasupper: libc::c_int = js_hasindex(J, 0 as libc::c_int, upper);
         if haslower != 0 && hasupper != 0 {
             js_setindex(J, 0 as libc::c_int, lower);
             js_setindex(J, 0 as libc::c_int, upper);
@@ -1150,7 +1169,7 @@ unsafe extern "C" fn Ap_reverse(mut J: *mut js_State) {
     }
     js_copy(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Ap_shift(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_shift(J: *mut js_State) {
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     len = js_getlength(J, 0 as libc::c_int);
@@ -1173,7 +1192,7 @@ unsafe extern "C" fn Ap_shift(mut J: *mut js_State) {
     js_delindex(J, 0 as libc::c_int, len - 1 as libc::c_int);
     js_setlength(J, 0 as libc::c_int, len - 1 as libc::c_int);
 }
-unsafe extern "C" fn Ap_slice(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_slice(J: *mut js_State) {
     let mut len: libc::c_int = 0;
     let mut s: libc::c_int = 0;
     let mut e: libc::c_int = 0;
@@ -1220,19 +1239,17 @@ unsafe extern "C" fn Ap_slice(mut J: *mut js_State) {
     }
 }
 unsafe extern "C" fn Ap_sort_cmp(
-    mut J: *mut js_State,
-    mut idx_a: libc::c_int,
-    mut idx_b: libc::c_int,
+    J: *mut js_State,
+    idx_a: libc::c_int,
+    idx_b: libc::c_int,
 ) -> libc::c_int {
-    let mut obj: *mut js_Object = (*js_tovalue(J, 0 as libc::c_int)).u.object;
+    let obj: *mut js_Object = (*js_tovalue(J, 0 as libc::c_int)).u.object;
     if (*obj).u.a.simple != 0 {
-        let mut val_a: *mut js_Value =
-            &mut *((*obj).u.a.array).offset(idx_a as isize) as *mut js_Value;
-        let mut val_b: *mut js_Value =
-            &mut *((*obj).u.a.array).offset(idx_b as isize) as *mut js_Value;
-        let mut und_a: libc::c_int =
+        let val_a: *mut js_Value = &mut *((*obj).u.a.array).offset(idx_a as isize) as *mut js_Value;
+        let val_b: *mut js_Value = &mut *((*obj).u.a.array).offset(idx_b as isize) as *mut js_Value;
+        let und_a: libc::c_int =
             ((*val_a).t.type_0 as libc::c_int == JS_TUNDEFINED as libc::c_int) as libc::c_int;
-        let mut und_b: libc::c_int =
+        let und_b: libc::c_int =
             ((*val_b).t.type_0 as libc::c_int == JS_TUNDEFINED as libc::c_int) as libc::c_int;
         if und_a != 0 {
             return und_b;
@@ -1275,8 +1292,8 @@ unsafe extern "C" fn Ap_sort_cmp(
     } else {
         let mut und_a_0: libc::c_int = 0;
         let mut und_b_0: libc::c_int = 0;
-        let mut has_a: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_a);
-        let mut has_b: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_b);
+        let has_a: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_a);
+        let has_b: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_b);
         if has_a == 0 && has_b == 0 {
             return 0 as libc::c_int;
         }
@@ -1319,27 +1336,23 @@ unsafe extern "C" fn Ap_sort_cmp(
                 1 as libc::c_int
             }
         } else {
-            let mut str_a_0: *const libc::c_char = js_tostring(J, -(2 as libc::c_int));
-            let mut str_b_0: *const libc::c_char = js_tostring(J, -(1 as libc::c_int));
-            let mut c_0: libc::c_int = strcmp(str_a_0, str_b_0);
+            let str_a_0: *const libc::c_char = js_tostring(J, -(2 as libc::c_int));
+            let str_b_0: *const libc::c_char = js_tostring(J, -(1 as libc::c_int));
+            let c_0: libc::c_int = strcmp(str_a_0, str_b_0);
             js_pop(J, 2 as libc::c_int);
             c_0
         }
     }
 }
-unsafe extern "C" fn Ap_sort_swap(
-    mut J: *mut js_State,
-    mut idx_a: libc::c_int,
-    mut idx_b: libc::c_int,
-) {
-    let mut obj: *mut js_Object = (*js_tovalue(J, 0 as libc::c_int)).u.object;
+unsafe extern "C" fn Ap_sort_swap(J: *mut js_State, idx_a: libc::c_int, idx_b: libc::c_int) {
+    let obj: *mut js_Object = (*js_tovalue(J, 0 as libc::c_int)).u.object;
     if (*obj).u.a.simple != 0 {
-        let mut tmp: js_Value = *((*obj).u.a.array).offset(idx_a as isize);
+        let tmp: js_Value = *((*obj).u.a.array).offset(idx_a as isize);
         *((*obj).u.a.array).offset(idx_a as isize) = *((*obj).u.a.array).offset(idx_b as isize);
         *((*obj).u.a.array).offset(idx_b as isize) = tmp;
     } else {
-        let mut has_a: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_a);
-        let mut has_b: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_b);
+        let has_a: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_a);
+        let has_b: libc::c_int = js_hasindex(J, 0 as libc::c_int, idx_b);
         if has_a != 0 && has_b != 0 {
             js_setindex(J, 0 as libc::c_int, idx_a);
             js_setindex(J, 0 as libc::c_int, idx_b);
@@ -1353,9 +1366,9 @@ unsafe extern "C" fn Ap_sort_swap(
     };
 }
 unsafe extern "C" fn Ap_sort_leaf(
-    mut J: *mut js_State,
-    mut i: libc::c_int,
-    mut end: libc::c_int,
+    J: *mut js_State,
+    i: libc::c_int,
+    end: libc::c_int,
 ) -> libc::c_int {
     let mut j: libc::c_int = i;
     let mut lc: libc::c_int = (j << 1 as libc::c_int) + 1 as libc::c_int;
@@ -1374,7 +1387,7 @@ unsafe extern "C" fn Ap_sort_leaf(
     }
     j
 }
-unsafe extern "C" fn Ap_sort_sift(mut J: *mut js_State, mut i: libc::c_int, mut end: libc::c_int) {
+unsafe extern "C" fn Ap_sort_sift(J: *mut js_State, i: libc::c_int, end: libc::c_int) {
     let mut j: libc::c_int = Ap_sort_leaf(J, i, end);
     while Ap_sort_cmp(J, i, j) > 0 as libc::c_int {
         j = (j - 1 as libc::c_int) >> 1 as libc::c_int;
@@ -1384,7 +1397,7 @@ unsafe extern "C" fn Ap_sort_sift(mut J: *mut js_State, mut i: libc::c_int, mut 
         j = (j - 1 as libc::c_int) >> 1 as libc::c_int;
     }
 }
-unsafe extern "C" fn Ap_sort_heapsort(mut J: *mut js_State, mut n: libc::c_int) {
+unsafe extern "C" fn Ap_sort_heapsort(J: *mut js_State, n: libc::c_int) {
     let mut i: libc::c_int = 0;
     i = n / 2 as libc::c_int - 1 as libc::c_int;
     while i >= 0 as libc::c_int {
@@ -1400,7 +1413,7 @@ unsafe extern "C" fn Ap_sort_heapsort(mut J: *mut js_State, mut n: libc::c_int) 
         i;
     }
 }
-unsafe extern "C" fn Ap_sort(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_sort(J: *mut js_State) {
     let mut len: libc::c_int = 0;
     len = js_getlength(J, 0 as libc::c_int);
     if len <= 1 as libc::c_int {
@@ -1423,8 +1436,8 @@ unsafe extern "C" fn Ap_sort(mut J: *mut js_State) {
     Ap_sort_heapsort(J, len);
     js_copy(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Ap_splice(mut J: *mut js_State) {
-    let mut top: libc::c_int = js_gettop(J);
+unsafe extern "C" fn Ap_splice(J: *mut js_State) {
+    let top: libc::c_int = js_gettop(J);
     let mut len: libc::c_int = 0;
     let mut start: libc::c_int = 0;
     let mut del: libc::c_int = 0;
@@ -1501,16 +1514,16 @@ unsafe extern "C" fn Ap_splice(mut J: *mut js_State) {
     }
     js_setlength(J, 0 as libc::c_int, len - del + add);
 }
-unsafe extern "C" fn Ap_unshift(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_unshift(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     len = js_getlength(J, 0 as libc::c_int);
     k = len;
     while k > 0 as libc::c_int {
-        let mut from: libc::c_int = k - 1 as libc::c_int;
-        let mut to: libc::c_int = k + top - 2 as libc::c_int;
+        let from: libc::c_int = k - 1 as libc::c_int;
+        let to: libc::c_int = k + top - 2 as libc::c_int;
         if js_hasindex(J, 0 as libc::c_int, from) != 0 {
             js_setindex(J, 0 as libc::c_int, to);
         } else {
@@ -1529,7 +1542,7 @@ unsafe extern "C" fn Ap_unshift(mut J: *mut js_State) {
     js_setlength(J, 0 as libc::c_int, len + top - 1 as libc::c_int);
     js_pushnumber(J, (len + top - 1 as libc::c_int) as libc::c_double);
 }
-unsafe extern "C" fn Ap_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_toString(J: *mut js_State) {
     if js_iscoercible(J, 0 as libc::c_int) == 0 {
         js_typeerror(
             J,
@@ -1560,7 +1573,7 @@ unsafe extern "C" fn Ap_toString(mut J: *mut js_State) {
     js_copy(J, 0 as libc::c_int);
     js_call(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Ap_indexOf(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_indexOf(J: *mut js_State) {
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     let mut from: libc::c_int = 0;
@@ -1591,7 +1604,7 @@ unsafe extern "C" fn Ap_indexOf(mut J: *mut js_State) {
     }
     js_pushnumber(J, -(1 as libc::c_int) as libc::c_double);
 }
-unsafe extern "C" fn Ap_lastIndexOf(mut J: *mut js_State) {
+unsafe extern "C" fn Ap_lastIndexOf(J: *mut js_State) {
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     let mut from: libc::c_int = 0;
@@ -1622,8 +1635,8 @@ unsafe extern "C" fn Ap_lastIndexOf(mut J: *mut js_State) {
     }
     js_pushnumber(J, -(1 as libc::c_int) as libc::c_double);
 }
-unsafe extern "C" fn Ap_every(mut J: *mut js_State) {
-    let mut hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_every(J: *mut js_State) {
+    let hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1656,8 +1669,8 @@ unsafe extern "C" fn Ap_every(mut J: *mut js_State) {
     }
     js_pushboolean(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn Ap_some(mut J: *mut js_State) {
-    let mut hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_some(J: *mut js_State) {
+    let hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1690,8 +1703,8 @@ unsafe extern "C" fn Ap_some(mut J: *mut js_State) {
     }
     js_pushboolean(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Ap_forEach(mut J: *mut js_State) {
-    let mut hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_forEach(J: *mut js_State) {
+    let hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1721,8 +1734,8 @@ unsafe extern "C" fn Ap_forEach(mut J: *mut js_State) {
     }
     js_pushundefined(J);
 }
-unsafe extern "C" fn Ap_map(mut J: *mut js_State) {
-    let mut hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_map(J: *mut js_State) {
+    let hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1754,8 +1767,8 @@ unsafe extern "C" fn Ap_map(mut J: *mut js_State) {
     }
     js_setlength(J, -(1 as libc::c_int), len);
 }
-unsafe extern "C" fn Ap_filter(mut J: *mut js_State) {
-    let mut hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_filter(J: *mut js_State) {
+    let hasthis: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut to: libc::c_int = 0;
     let mut len: libc::c_int = 0;
@@ -1794,8 +1807,8 @@ unsafe extern "C" fn Ap_filter(mut J: *mut js_State) {
         k;
     }
 }
-unsafe extern "C" fn Ap_reduce(mut J: *mut js_State) {
-    let mut hasinitial: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_reduce(J: *mut js_State) {
+    let hasinitial: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1837,8 +1850,8 @@ unsafe extern "C" fn Ap_reduce(mut J: *mut js_State) {
         k;
     }
 }
-unsafe extern "C" fn Ap_reduceRight(mut J: *mut js_State) {
-    let mut hasinitial: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
+unsafe extern "C" fn Ap_reduceRight(J: *mut js_State) {
+    let hasinitial: libc::c_int = (js_gettop(J) >= 3 as libc::c_int) as libc::c_int;
     let mut k: libc::c_int = 0;
     let mut len: libc::c_int = 0;
     if js_iscallable(J, 1 as libc::c_int) == 0 {
@@ -1880,9 +1893,9 @@ unsafe extern "C" fn Ap_reduceRight(mut J: *mut js_State) {
         k;
     }
 }
-unsafe extern "C" fn A_isArray(mut J: *mut js_State) {
+unsafe extern "C" fn A_isArray(J: *mut js_State) {
     if js_isobject(J, 1 as libc::c_int) != 0 {
-        let mut T: *mut js_Object = js_toobject(J, 1 as libc::c_int);
+        let T: *mut js_Object = js_toobject(J, 1 as libc::c_int);
         js_pushboolean(
             J,
             ((*T).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint)
@@ -1893,7 +1906,7 @@ unsafe extern "C" fn A_isArray(mut J: *mut js_State) {
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initarray(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initarray(J: *mut js_State) {
     js_pushobject(J, (*J).Array_prototype);
     jsB_propf(
         J,
@@ -2034,14 +2047,14 @@ pub unsafe extern "C" fn jsB_initarray(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsB_new_Boolean(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_Boolean(J: *mut js_State) {
     js_newboolean(J, js_toboolean(J, 1 as libc::c_int));
 }
-unsafe extern "C" fn jsB_Boolean(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Boolean(J: *mut js_State) {
     js_pushboolean(J, js_toboolean(J, 1 as libc::c_int));
 }
-unsafe extern "C" fn Bp_toString(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Bp_toString(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if (*self_0).type_0 as libc::c_uint != JS_CBOOLEAN as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a boolean\0" as *const u8 as *const libc::c_char);
     }
@@ -2054,15 +2067,15 @@ unsafe extern "C" fn Bp_toString(mut J: *mut js_State) {
         },
     );
 }
-unsafe extern "C" fn Bp_valueOf(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Bp_valueOf(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if (*self_0).type_0 as libc::c_uint != JS_CBOOLEAN as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a boolean\0" as *const u8 as *const libc::c_char);
     }
     js_pushboolean(J, (*self_0).u.boolean);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initboolean(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initboolean(J: *mut js_State) {
     (*(*J).Boolean_prototype).u.boolean = 0 as libc::c_int;
     js_pushobject(J, (*J).Boolean_prototype);
     jsB_propf(
@@ -2091,20 +2104,20 @@ pub unsafe extern "C" fn jsB_initboolean(mut J: *mut js_State) {
     );
 }
 unsafe extern "C" fn jsB_globalf(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut cfun: js_CFunction,
-    mut n: libc::c_int,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    cfun: js_CFunction,
+    n: libc::c_int,
 ) {
     js_newcfunction(J, cfun, name, n);
     js_defglobal(J, name, JS_DONTENUM as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsB_propf(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut cfun: js_CFunction,
-    mut n: libc::c_int,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    cfun: js_CFunction,
+    n: libc::c_int,
 ) {
     let mut pname: *const libc::c_char = strrchr(name, '.' as i32);
     pname = if !pname.is_null() {
@@ -2117,9 +2130,9 @@ pub unsafe extern "C" fn jsB_propf(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsB_propn(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut number: libc::c_double,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    number: libc::c_double,
 ) {
     js_pushnumber(J, number);
     js_defproperty(
@@ -2131,14 +2144,14 @@ pub unsafe extern "C" fn jsB_propn(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsB_props(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut string: *const libc::c_char,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    string: *const libc::c_char,
 ) {
     js_pushliteral(J, string);
     js_defproperty(J, -(2 as libc::c_int), name, JS_DONTENUM as libc::c_int);
 }
-unsafe extern "C" fn jsB_parseInt(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_parseInt(J: *mut js_State) {
     let mut s: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
     let mut radix: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tointeger(J, 2 as libc::c_int)
@@ -2180,7 +2193,7 @@ unsafe extern "C" fn jsB_parseInt(mut J: *mut js_State) {
         js_pushnumber(J, n * sign);
     };
 }
-unsafe extern "C" fn jsB_parseFloat(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_parseFloat(J: *mut js_State) {
     let mut s: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
     let mut e: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut n: libc::c_double = 0.;
@@ -2218,18 +2231,18 @@ unsafe extern "C" fn jsB_parseFloat(mut J: *mut js_State) {
         }
     };
 }
-unsafe extern "C" fn jsB_isNaN(mut J: *mut js_State) {
-    let mut n: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn jsB_isNaN(J: *mut js_State) {
+    let n: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_pushboolean(J, n.is_nan() as i32);
 }
-unsafe extern "C" fn jsB_isFinite(mut J: *mut js_State) {
-    let mut n: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn jsB_isFinite(J: *mut js_State) {
+    let n: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_pushboolean(J, n.is_finite() as i32);
 }
 unsafe extern "C" fn Encode(
-    mut J: *mut js_State,
-    mut str_: *const libc::c_char,
-    mut unescaped: *const libc::c_char,
+    J: *mut js_State,
+    str_: *const libc::c_char,
+    unescaped: *const libc::c_char,
 ) {
     let mut str: *const libc::c_char = str_;
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
@@ -2246,7 +2259,7 @@ unsafe extern "C" fn Encode(
             (::core::ptr::read_volatile::<*const libc::c_char>(&str as *const *const libc::c_char))
                 .offset(1),
         );
-        let mut c: libc::c_int = *fresh5 as libc::c_uchar as libc::c_int;
+        let c: libc::c_int = *fresh5 as libc::c_uchar as libc::c_int;
         if !(strchr(unescaped, c)).is_null() {
             js_putc(J, &mut sb, c);
         } else {
@@ -2276,9 +2289,9 @@ unsafe extern "C" fn Encode(
     js_free(J, sb as *mut libc::c_void);
 }
 unsafe extern "C" fn Decode(
-    mut J: *mut js_State,
-    mut str_: *const libc::c_char,
-    mut reserved: *const libc::c_char,
+    J: *mut js_State,
+    str_: *const libc::c_char,
+    reserved: *const libc::c_char,
 ) {
     let mut str: *const libc::c_char = str_;
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
@@ -2358,21 +2371,21 @@ unsafe extern "C" fn Decode(
     js_endtry(J);
     js_free(J, sb as *mut libc::c_void);
 }
-unsafe extern "C" fn jsB_decodeURI(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_decodeURI(J: *mut js_State) {
     Decode(
         J,
         js_tostring(J, 1 as libc::c_int),
         b";/?:@&=+$,#\0" as *const u8 as *const libc::c_char,
     );
 }
-unsafe extern "C" fn jsB_decodeURIComponent(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_decodeURIComponent(J: *mut js_State) {
     Decode(
         J,
         js_tostring(J, 1 as libc::c_int),
         b"\0" as *const u8 as *const libc::c_char,
     );
 }
-unsafe extern "C" fn jsB_encodeURI(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_encodeURI(J: *mut js_State) {
     Encode(
         J,
         js_tostring(J, 1 as libc::c_int),
@@ -2380,7 +2393,7 @@ unsafe extern "C" fn jsB_encodeURI(mut J: *mut js_State) {
             as *const u8 as *const libc::c_char,
     );
 }
-unsafe extern "C" fn jsB_encodeURIComponent(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_encodeURIComponent(J: *mut js_State) {
     Encode(
         J,
         js_tostring(J, 1 as libc::c_int),
@@ -2389,7 +2402,7 @@ unsafe extern "C" fn jsB_encodeURIComponent(mut J: *mut js_State) {
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_init(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_init(J: *mut js_State) {
     (*J).Object_prototype = jsV_newobject(J, JS_COBJECT, std::ptr::null_mut::<js_Object>());
     (*J).Array_prototype = jsV_newobject(J, JS_CARRAY, (*J).Object_prototype);
     (*J).Function_prototype = jsV_newobject(J, JS_CCFUNCTION, (*J).Object_prototype);
@@ -2494,10 +2507,10 @@ pub unsafe extern "C" fn jsB_init(mut J: *mut js_State) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsC_error(
-    mut J: *mut js_State,
-    mut node: *mut js_Ast,
-    mut fmt: *const libc::c_char,
-    mut args: ...
+    J: *mut js_State,
+    node: *mut js_Ast,
+    fmt: *const libc::c_char,
+    args: ...
 ) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 512] = [0; 512];
@@ -2540,11 +2553,7 @@ static mut strictfuturewords: [*const libc::c_char; 9] = [
     b"static\0" as *const u8 as *const libc::c_char,
     b"yield\0" as *const u8 as *const libc::c_char,
 ];
-unsafe extern "C" fn checkfutureword(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-) {
+unsafe extern "C" fn checkfutureword(J: *mut js_State, F: *mut js_Function, exp_0: *mut js_Ast) {
     if jsY_findword(
         (*exp_0).string,
         futurewords.as_mut_ptr(),
@@ -2578,16 +2587,16 @@ unsafe extern "C" fn checkfutureword(
     }
 }
 unsafe extern "C" fn newfun(
-    mut J: *mut js_State,
-    mut line: libc::c_int,
-    mut name: *mut js_Ast,
-    mut params: *mut js_Ast,
-    mut body: *mut js_Ast,
-    mut script_0: libc::c_int,
-    mut default_strict: libc::c_int,
-    mut is_fun_exp: libc::c_int,
+    J: *mut js_State,
+    line: libc::c_int,
+    name: *mut js_Ast,
+    params: *mut js_Ast,
+    body: *mut js_Ast,
+    script_0: libc::c_int,
+    default_strict: libc::c_int,
+    is_fun_exp: libc::c_int,
 ) -> *mut js_Function {
-    let mut F: *mut js_Function = js_malloc(
+    let F: *mut js_Function = js_malloc(
         J,
         ::core::mem::size_of::<js_Function>() as libc::c_ulong as libc::c_int,
     ) as *mut js_Function;
@@ -2613,11 +2622,7 @@ unsafe extern "C" fn newfun(
     cfunbody(J, F, name, params, body, is_fun_exp);
     F
 }
-unsafe extern "C" fn emitraw(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut value: libc::c_int,
-) {
+unsafe extern "C" fn emitraw(J: *mut js_State, F: *mut js_Function, value: libc::c_int) {
     if value != value as js_Instruction as libc::c_int {
         js_syntaxerror(
             J,
@@ -2642,28 +2647,20 @@ unsafe extern "C" fn emitraw(
     (*F).codelen += 1;
     *((*F).code).offset(fresh9 as isize) = value as js_Instruction;
 }
-unsafe extern "C" fn emit(mut J: *mut js_State, mut F: *mut js_Function, mut value: libc::c_int) {
+unsafe extern "C" fn emit(J: *mut js_State, F: *mut js_Function, value: libc::c_int) {
     emitraw(J, F, (*F).lastline);
     emitraw(J, F, value);
 }
-unsafe extern "C" fn emitarg(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut value: libc::c_int,
-) {
+unsafe extern "C" fn emitarg(J: *mut js_State, F: *mut js_Function, value: libc::c_int) {
     emitraw(J, F, value);
 }
-unsafe extern "C" fn emitline(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut node: *mut js_Ast,
-) {
+unsafe extern "C" fn emitline(J: *mut js_State, F: *mut js_Function, node: *mut js_Ast) {
     (*F).lastline = (*node).line;
 }
 unsafe extern "C" fn addfunction(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut value: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
+    value: *mut js_Function,
 ) -> libc::c_int {
     if (*F).funlen >= (*F).funcap {
         (*F).funcap = if (*F).funcap != 0 {
@@ -2686,12 +2683,12 @@ unsafe extern "C" fn addfunction(
     fresh11
 }
 unsafe extern "C" fn addlocal(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut ident: *mut js_Ast,
-    mut reuse: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    ident: *mut js_Ast,
+    reuse: libc::c_int,
 ) -> libc::c_int {
-    let mut name: *const libc::c_char = (*ident).string;
+    let name: *const libc::c_char = (*ident).string;
     if (*F).strict != 0 {
         if strcmp(name, b"arguments\0" as *const u8 as *const libc::c_char) == 0 {
             jsC_error(
@@ -2758,9 +2755,9 @@ unsafe extern "C" fn addlocal(
     (*F).varlen
 }
 unsafe extern "C" fn findlocal(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    F: *mut js_Function,
+    name: *const libc::c_char,
 ) -> libc::c_int {
     let mut i: libc::c_int = 0;
     i = (*F).varlen;
@@ -2773,20 +2770,12 @@ unsafe extern "C" fn findlocal(
     }
     -(1 as libc::c_int)
 }
-unsafe extern "C" fn emitfunction(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut fun: *mut js_Function,
-) {
+unsafe extern "C" fn emitfunction(J: *mut js_State, F: *mut js_Function, fun: *mut js_Function) {
     (*F).lightweight = 0 as libc::c_int;
     emit(J, F, OP_CLOSURE as libc::c_int);
     emitarg(J, F, addfunction(J, F, fun));
 }
-unsafe extern "C" fn emitnumber(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut num: libc::c_double,
-) {
+unsafe extern "C" fn emitnumber(J: *mut js_State, F: *mut js_Function, mut num: libc::c_double) {
     if num == 0 as libc::c_int as libc::c_double {
         emit(J, F, OP_INTEGER as libc::c_int);
         emitarg(J, F, 32768 as libc::c_int);
@@ -2824,9 +2813,9 @@ unsafe extern "C" fn emitnumber(
     };
 }
 unsafe extern "C" fn emitstring(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut opcode: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    opcode: libc::c_int,
     mut str: *const libc::c_char,
 ) {
     let mut x: [js_Instruction; 4] = [0; 4];
@@ -2848,17 +2837,17 @@ unsafe extern "C" fn emitstring(
     }
 }
 unsafe extern "C" fn emitlocal(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut oploc: libc::c_int,
-    mut opvar: libc::c_int,
-    mut ident: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    oploc: libc::c_int,
+    opvar: libc::c_int,
+    ident: *mut js_Ast,
 ) {
-    let mut is_arguments: libc::c_int = (strcmp(
+    let is_arguments: libc::c_int = (strcmp(
         (*ident).string,
         b"arguments\0" as *const u8 as *const libc::c_char,
     ) == 0) as libc::c_int;
-    let mut is_eval: libc::c_int = (strcmp(
+    let is_eval: libc::c_int = (strcmp(
         (*ident).string,
         b"eval\0" as *const u8 as *const libc::c_char,
     ) == 0) as libc::c_int;
@@ -2900,13 +2889,13 @@ unsafe extern "C" fn emitlocal(
         emitarg(J, F, i);
     };
 }
-unsafe extern "C" fn here(mut J: *mut js_State, mut F: *mut js_Function) -> libc::c_int {
+unsafe extern "C" fn here(J: *mut js_State, F: *mut js_Function) -> libc::c_int {
     (*F).codelen
 }
 unsafe extern "C" fn emitjump(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut opcode: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    opcode: libc::c_int,
 ) -> libc::c_int {
     let mut inst: libc::c_int = 0;
     emit(J, F, opcode);
@@ -2915,10 +2904,10 @@ unsafe extern "C" fn emitjump(
     inst
 }
 unsafe extern "C" fn emitjumpto(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut opcode: libc::c_int,
-    mut dest: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    opcode: libc::c_int,
+    dest: libc::c_int,
 ) {
     emit(J, F, opcode);
     if dest != dest as js_Instruction as libc::c_int {
@@ -2930,10 +2919,10 @@ unsafe extern "C" fn emitjumpto(
     emitarg(J, F, dest);
 }
 unsafe extern "C" fn labelto(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut inst: libc::c_int,
-    mut addr: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    inst: libc::c_int,
+    addr: libc::c_int,
 ) {
     if addr != addr as js_Instruction as libc::c_int {
         js_syntaxerror(
@@ -2943,14 +2932,10 @@ unsafe extern "C" fn labelto(
     }
     *((*F).code).offset(inst as isize) = addr as js_Instruction;
 }
-unsafe extern "C" fn label(mut J: *mut js_State, mut F: *mut js_Function, mut inst: libc::c_int) {
+unsafe extern "C" fn label(J: *mut js_State, F: *mut js_Function, inst: libc::c_int) {
     labelto(J, F, inst, (*F).codelen);
 }
-unsafe extern "C" fn ctypeof(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-) {
+unsafe extern "C" fn ctypeof(J: *mut js_State, F: *mut js_Function, exp_0: *mut js_Ast) {
     if (*(*exp_0).a).type_0 as libc::c_uint == EXP_IDENTIFIER as libc::c_int as libc::c_uint {
         emitline(J, F, (*exp_0).a);
         emitlocal(
@@ -2967,27 +2952,27 @@ unsafe extern "C" fn ctypeof(
     emit(J, F, OP_TYPEOF as libc::c_int);
 }
 unsafe extern "C" fn cunary(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-    mut opcode: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    exp_0: *mut js_Ast,
+    opcode: libc::c_int,
 ) {
     jsC_cexp(J, F, (*exp_0).a);
     emitline(J, F, exp_0);
     emit(J, F, opcode);
 }
 unsafe extern "C" fn cbinary(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-    mut opcode: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    exp_0: *mut js_Ast,
+    opcode: libc::c_int,
 ) {
     jsC_cexp(J, F, (*exp_0).a);
     jsC_cexp(J, F, (*exp_0).b);
     emitline(J, F, exp_0);
     emit(J, F, opcode);
 }
-unsafe extern "C" fn carray(mut J: *mut js_State, mut F: *mut js_Function, mut list: *mut js_Ast) {
+unsafe extern "C" fn carray(J: *mut js_State, F: *mut js_Function, mut list: *mut js_Ast) {
     while !list.is_null() {
         emitline(J, F, (*list).a);
         if (*(*list).a).type_0 as libc::c_uint == EXP_ELISION as libc::c_int as libc::c_uint {
@@ -3000,10 +2985,10 @@ unsafe extern "C" fn carray(mut J: *mut js_State, mut F: *mut js_Function, mut l
     }
 }
 unsafe extern "C" fn checkdup(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut list: *mut js_Ast,
-    mut end: *mut js_Ast,
+    end: *mut js_Ast,
 ) {
     let mut nbuf: [libc::c_char; 32] = [0; 32];
     let mut sbuf: [libc::c_char; 32] = [0; 32];
@@ -3016,7 +3001,7 @@ unsafe extern "C" fn checkdup(
     }
     while (*list).a != end {
         if (*(*list).a).type_0 as libc::c_uint == (*end).type_0 as libc::c_uint {
-            let mut prop: *mut js_Ast = (*(*list).a).a;
+            let prop: *mut js_Ast = (*(*list).a).a;
             if (*prop).type_0 as libc::c_uint == EXP_NUMBER as libc::c_int as libc::c_uint {
                 straw = jsV_numbertostring(J, sbuf.as_mut_ptr(), (*prop).number);
             } else {
@@ -3035,11 +3020,11 @@ unsafe extern "C" fn checkdup(
         list = (*list).b;
     }
 }
-unsafe extern "C" fn cobject(mut J: *mut js_State, mut F: *mut js_Function, mut list: *mut js_Ast) {
-    let mut head: *mut js_Ast = list;
+unsafe extern "C" fn cobject(J: *mut js_State, F: *mut js_Function, mut list: *mut js_Ast) {
+    let head: *mut js_Ast = list;
     while !list.is_null() {
-        let mut kv: *mut js_Ast = (*list).a;
-        let mut prop: *mut js_Ast = (*kv).a;
+        let kv: *mut js_Ast = (*list).a;
+        let prop: *mut js_Ast = (*kv).a;
         if (*prop).type_0 as libc::c_uint == AST_IDENTIFIER as libc::c_int as libc::c_uint
             || (*prop).type_0 as libc::c_uint == EXP_STRING as libc::c_int as libc::c_uint
         {
@@ -3107,8 +3092,8 @@ unsafe extern "C" fn cobject(mut J: *mut js_State, mut F: *mut js_Function, mut 
     }
 }
 unsafe extern "C" fn cargs(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut list: *mut js_Ast,
 ) -> libc::c_int {
     let mut n: libc::c_int = 0 as libc::c_int;
@@ -3120,13 +3105,9 @@ unsafe extern "C" fn cargs(
     }
     n
 }
-unsafe extern "C" fn cassign(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-) {
-    let mut lhs: *mut js_Ast = (*exp_0).a;
-    let mut rhs: *mut js_Ast = (*exp_0).b;
+unsafe extern "C" fn cassign(J: *mut js_State, F: *mut js_Function, exp_0: *mut js_Ast) {
+    let lhs: *mut js_Ast = (*exp_0).a;
+    let rhs: *mut js_Ast = (*exp_0).b;
     match (*lhs).type_0 as libc::c_uint {
         3 => {
             jsC_cexp(J, F, rhs);
@@ -3161,12 +3142,8 @@ unsafe extern "C" fn cassign(
         }
     };
 }
-unsafe extern "C" fn cassignforin(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut stm: *mut js_Ast,
-) {
-    let mut lhs: *mut js_Ast = (*stm).a;
+unsafe extern "C" fn cassignforin(J: *mut js_State, F: *mut js_Function, stm: *mut js_Ast) {
+    let lhs: *mut js_Ast = (*stm).a;
     if (*stm).type_0 as libc::c_uint == STM_FOR_IN_VAR as libc::c_int as libc::c_uint {
         if !((*lhs).b).is_null() {
             jsC_error(
@@ -3223,11 +3200,7 @@ unsafe extern "C" fn cassignforin(
         }
     };
 }
-unsafe extern "C" fn cassignop1(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut lhs: *mut js_Ast,
-) {
+unsafe extern "C" fn cassignop1(J: *mut js_State, F: *mut js_Function, lhs: *mut js_Ast) {
     match (*lhs).type_0 as libc::c_uint {
         3 => {
             emitline(J, F, lhs);
@@ -3262,10 +3235,10 @@ unsafe extern "C" fn cassignop1(
     };
 }
 unsafe extern "C" fn cassignop2(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut lhs: *mut js_Ast,
-    mut postfix_0: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    lhs: *mut js_Ast,
+    postfix_0: libc::c_int,
 ) {
     match (*lhs).type_0 as libc::c_uint {
         3 => {
@@ -3305,25 +3278,21 @@ unsafe extern "C" fn cassignop2(
     };
 }
 unsafe extern "C" fn cassignop(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-    mut opcode: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    exp_0: *mut js_Ast,
+    opcode: libc::c_int,
 ) {
-    let mut lhs: *mut js_Ast = (*exp_0).a;
-    let mut rhs: *mut js_Ast = (*exp_0).b;
+    let lhs: *mut js_Ast = (*exp_0).a;
+    let rhs: *mut js_Ast = (*exp_0).b;
     cassignop1(J, F, lhs);
     jsC_cexp(J, F, rhs);
     emitline(J, F, exp_0);
     emit(J, F, opcode);
     cassignop2(J, F, lhs, 0 as libc::c_int);
 }
-unsafe extern "C" fn cdelete(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-) {
-    let mut arg: *mut js_Ast = (*exp_0).a;
+unsafe extern "C" fn cdelete(J: *mut js_State, F: *mut js_Function, exp_0: *mut js_Ast) {
+    let arg: *mut js_Ast = (*exp_0).a;
     match (*arg).type_0 as libc::c_uint {
         3 => {
             if (*F).strict != 0 {
@@ -3364,10 +3333,10 @@ unsafe extern "C" fn cdelete(
     };
 }
 unsafe extern "C" fn ceval(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut fun: *mut js_Ast,
-    mut args: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    fun: *mut js_Ast,
+    args: *mut js_Ast,
 ) {
     let mut n: libc::c_int = cargs(J, F, args);
     (*F).lightweight = 0 as libc::c_int;
@@ -3387,13 +3356,13 @@ unsafe extern "C" fn ceval(
     emit(J, F, OP_EVAL as libc::c_int);
 }
 unsafe extern "C" fn ccall(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut fun: *mut js_Ast,
-    mut args: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    fun: *mut js_Ast,
+    args: *mut js_Ast,
 ) {
     let mut n: libc::c_int = 0;
-    let mut current_block_14: u64;
+    let current_block_14: u64;
     match (*fun).type_0 as libc::c_uint {
         18 => {
             jsC_cexp(J, F, (*fun).a);
@@ -3429,11 +3398,7 @@ unsafe extern "C" fn ccall(
     emit(J, F, OP_CALL as libc::c_int);
     emitarg(J, F, n);
 }
-unsafe extern "C" fn jsC_cexp(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut exp_0: *mut js_Ast,
-) {
+unsafe extern "C" fn jsC_cexp(J: *mut js_State, F: *mut js_Function, exp_0: *mut js_Ast) {
     let mut then: libc::c_int = 0;
     let mut end: libc::c_int = 0;
     let mut n: libc::c_int = 0;
@@ -3719,13 +3684,13 @@ unsafe extern "C" fn jsC_cexp(
     };
 }
 unsafe extern "C" fn addjump(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut type_0: js_AstType,
-    mut target: *mut js_Ast,
-    mut inst: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    type_0: js_AstType,
+    target: *mut js_Ast,
+    inst: libc::c_int,
 ) {
-    let mut jump: *mut js_JumpList = js_malloc(
+    let jump: *mut js_JumpList = js_malloc(
         J,
         ::core::mem::size_of::<js_JumpList>() as libc::c_ulong as libc::c_int,
     ) as *mut js_JumpList;
@@ -3735,15 +3700,15 @@ unsafe extern "C" fn addjump(
     (*target).jumps = jump;
 }
 unsafe extern "C" fn labeljumps(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut stm: *mut js_Ast,
-    mut baddr: libc::c_int,
-    mut caddr: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    stm: *mut js_Ast,
+    baddr: libc::c_int,
+    caddr: libc::c_int,
 ) {
     let mut jump: *mut js_JumpList = (*stm).jumps;
     while !jump.is_null() {
-        let mut next_0: *mut js_JumpList = (*jump).next;
+        let next_0: *mut js_JumpList = (*jump).next;
         if (*jump).type_0 as libc::c_uint == STM_BREAK as libc::c_int as libc::c_uint {
             labelto(J, F, (*jump).inst, baddr);
         }
@@ -3755,7 +3720,7 @@ unsafe extern "C" fn labeljumps(
     }
     (*stm).jumps = std::ptr::null_mut::<js_JumpList>();
 }
-unsafe extern "C" fn isloop(mut T: js_AstType) -> libc::c_int {
+unsafe extern "C" fn isloop(T: js_AstType) -> libc::c_int {
     (T as libc::c_uint == STM_DO as libc::c_int as libc::c_uint
         || T as libc::c_uint == STM_WHILE as libc::c_int as libc::c_uint
         || T as libc::c_uint == STM_FOR as libc::c_int as libc::c_uint
@@ -3763,7 +3728,7 @@ unsafe extern "C" fn isloop(mut T: js_AstType) -> libc::c_int {
         || T as libc::c_uint == STM_FOR_IN as libc::c_int as libc::c_uint
         || T as libc::c_uint == STM_FOR_IN_VAR as libc::c_int as libc::c_uint) as libc::c_int
 }
-unsafe extern "C" fn isfun(mut T: js_AstType) -> libc::c_int {
+unsafe extern "C" fn isfun(T: js_AstType) -> libc::c_int {
     (T as libc::c_uint == AST_FUNDEC as libc::c_int as libc::c_uint
         || T as libc::c_uint == EXP_FUN as libc::c_int as libc::c_uint
         || T as libc::c_uint == EXP_PROP_GET as libc::c_int as libc::c_uint
@@ -3771,7 +3736,7 @@ unsafe extern "C" fn isfun(mut T: js_AstType) -> libc::c_int {
 }
 unsafe extern "C" fn matchlabel(
     mut node: *mut js_Ast,
-    mut label_0: *const libc::c_char,
+    label_0: *const libc::c_char,
 ) -> libc::c_int {
     while !node.is_null()
         && (*node).type_0 as libc::c_uint == STM_LABEL as libc::c_int as libc::c_uint
@@ -3784,10 +3749,10 @@ unsafe extern "C" fn matchlabel(
     0 as libc::c_int
 }
 unsafe extern "C" fn breaktarget(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut node: *mut js_Ast,
-    mut label_0: *const libc::c_char,
+    label_0: *const libc::c_char,
 ) -> *mut js_Ast {
     while !node.is_null() {
         if isfun((*node).type_0) != 0 {
@@ -3807,10 +3772,10 @@ unsafe extern "C" fn breaktarget(
     std::ptr::null_mut::<js_Ast>()
 }
 unsafe extern "C" fn continuetarget(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut node: *mut js_Ast,
-    mut label_0: *const libc::c_char,
+    label_0: *const libc::c_char,
 ) -> *mut js_Ast {
     while !node.is_null() {
         if isfun((*node).type_0) != 0 {
@@ -3828,8 +3793,8 @@ unsafe extern "C" fn continuetarget(
     std::ptr::null_mut::<js_Ast>()
 }
 unsafe extern "C" fn returntarget(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut node: *mut js_Ast,
 ) -> *mut js_Ast {
     while !node.is_null() {
@@ -3841,11 +3806,11 @@ unsafe extern "C" fn returntarget(
     std::ptr::null_mut::<js_Ast>()
 }
 unsafe extern "C" fn cexit(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut T: js_AstType,
+    J: *mut js_State,
+    F: *mut js_Function,
+    T: js_AstType,
     mut node: *mut js_Ast,
-    mut target: *mut js_Ast,
+    target: *mut js_Ast,
 ) {
     let mut prev: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     loop {
@@ -3909,10 +3874,10 @@ unsafe extern "C" fn cexit(
     }
 }
 unsafe extern "C" fn ctryfinally(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut trystm: *mut js_Ast,
-    mut finallystm: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    trystm: *mut js_Ast,
+    finallystm: *mut js_Ast,
 ) {
     let mut L1: libc::c_int = 0;
     L1 = emitjump(J, F, OP_TRY as libc::c_int);
@@ -3924,11 +3889,11 @@ unsafe extern "C" fn ctryfinally(
     cstm(J, F, finallystm);
 }
 unsafe extern "C" fn ctrycatch(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut trystm: *mut js_Ast,
-    mut catchvar: *mut js_Ast,
-    mut catchstm: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    trystm: *mut js_Ast,
+    catchvar: *mut js_Ast,
+    catchstm: *mut js_Ast,
 ) {
     let mut L1: libc::c_int = 0;
     let mut L2: libc::c_int = 0;
@@ -3971,12 +3936,12 @@ unsafe extern "C" fn ctrycatch(
     label(J, F, L2);
 }
 unsafe extern "C" fn ctrycatchfinally(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut trystm: *mut js_Ast,
-    mut catchvar: *mut js_Ast,
-    mut catchstm: *mut js_Ast,
-    mut finallystm: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    trystm: *mut js_Ast,
+    catchvar: *mut js_Ast,
+    catchstm: *mut js_Ast,
+    finallystm: *mut js_Ast,
 ) {
     let mut L1: libc::c_int = 0;
     let mut L2: libc::c_int = 0;
@@ -4026,10 +3991,10 @@ unsafe extern "C" fn ctrycatchfinally(
     cstm(J, F, finallystm);
 }
 unsafe extern "C" fn cswitch(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut ref_0: *mut js_Ast,
-    mut head: *mut js_Ast,
+    J: *mut js_State,
+    F: *mut js_Function,
+    ref_0: *mut js_Ast,
+    head: *mut js_Ast,
 ) {
     let mut node: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut clause: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -4078,13 +4043,9 @@ unsafe extern "C" fn cswitch(
         label(J, F, end);
     }
 }
-unsafe extern "C" fn cvarinit(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut list: *mut js_Ast,
-) {
+unsafe extern "C" fn cvarinit(J: *mut js_State, F: *mut js_Function, mut list: *mut js_Ast) {
     while !list.is_null() {
-        let mut var: *mut js_Ast = (*list).a;
+        let var: *mut js_Ast = (*list).a;
         if !((*var).b).is_null() {
             jsC_cexp(J, F, (*var).b);
             emitline(J, F, var);
@@ -4100,7 +4061,7 @@ unsafe extern "C" fn cvarinit(
         list = (*list).b;
     }
 }
-unsafe extern "C" fn cstm(mut J: *mut js_State, mut F: *mut js_Function, mut stm: *mut js_Ast) {
+unsafe extern "C" fn cstm(J: *mut js_State, F: *mut js_Function, mut stm: *mut js_Ast) {
     let mut target: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut loop_0: libc::c_int = 0;
     let mut cont: libc::c_int = 0;
@@ -4360,11 +4321,7 @@ unsafe extern "C" fn cstm(mut J: *mut js_State, mut F: *mut js_Function, mut stm
         }
     };
 }
-unsafe extern "C" fn cstmlist(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut list: *mut js_Ast,
-) {
+unsafe extern "C" fn cstmlist(J: *mut js_State, F: *mut js_Function, mut list: *mut js_Ast) {
     while !list.is_null() {
         cstm(J, F, (*list).a);
         list = (*list).b;
@@ -4380,10 +4337,10 @@ unsafe extern "C" fn listlength(mut list: *mut js_Ast) -> libc::c_int {
     n
 }
 unsafe extern "C" fn cparams(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    F: *mut js_Function,
     mut list: *mut js_Ast,
-    mut fname: *mut js_Ast,
+    fname: *mut js_Ast,
 ) {
     (*F).numparams = listlength(list);
     while !list.is_null() {
@@ -4392,11 +4349,7 @@ unsafe extern "C" fn cparams(
         list = (*list).b;
     }
 }
-unsafe extern "C" fn cvardecs(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut node: *mut js_Ast,
-) {
+unsafe extern "C" fn cvardecs(J: *mut js_State, F: *mut js_Function, mut node: *mut js_Ast) {
     if (*node).type_0 as libc::c_uint == AST_LIST as libc::c_int as libc::c_uint {
         while !node.is_null() {
             cvardecs(J, F, (*node).a);
@@ -4424,13 +4377,9 @@ unsafe extern "C" fn cvardecs(
         cvardecs(J, F, (*node).d);
     }
 }
-unsafe extern "C" fn cfundecs(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut list: *mut js_Ast,
-) {
+unsafe extern "C" fn cfundecs(J: *mut js_State, F: *mut js_Function, mut list: *mut js_Ast) {
     while !list.is_null() {
-        let mut stm: *mut js_Ast = (*list).a;
+        let stm: *mut js_Ast = (*list).a;
         if (*stm).type_0 as libc::c_uint == AST_FUNDEC as libc::c_int as libc::c_uint {
             emitline(J, F, stm);
             emitfunction(
@@ -4456,12 +4405,12 @@ unsafe extern "C" fn cfundecs(
     }
 }
 unsafe extern "C" fn cfunbody(
-    mut J: *mut js_State,
-    mut F: *mut js_Function,
-    mut name: *mut js_Ast,
-    mut params: *mut js_Ast,
-    mut body: *mut js_Ast,
-    mut is_fun_exp: libc::c_int,
+    J: *mut js_State,
+    F: *mut js_Function,
+    name: *mut js_Ast,
+    params: *mut js_Ast,
+    body: *mut js_Ast,
+    is_fun_exp: libc::c_int,
 ) {
     (*F).lightweight = 1 as libc::c_int;
     (*F).arguments = 0 as libc::c_int;
@@ -4506,8 +4455,8 @@ unsafe extern "C" fn cfunbody(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsC_compilefunction(
-    mut J: *mut js_State,
-    mut prog: *mut js_Ast,
+    J: *mut js_State,
+    prog: *mut js_Ast,
 ) -> *mut js_Function {
     newfun(
         J,
@@ -4522,9 +4471,9 @@ pub unsafe extern "C" fn jsC_compilefunction(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsC_compilescript(
-    mut J: *mut js_State,
-    mut prog: *mut js_Ast,
-    mut default_strict: libc::c_int,
+    J: *mut js_State,
+    prog: *mut js_Ast,
+    default_strict: libc::c_int,
 ) -> *mut js_Function {
     newfun(
         J,
@@ -4554,30 +4503,30 @@ unsafe extern "C" fn LocalTZA() -> libc::c_double {
     static mut tza: libc::c_double = 0 as libc::c_int as libc::c_double;
     if once != 0 {
         let mut now: time_t = time(std::ptr::null_mut::<time_t>());
-        let mut utc: time_t = mktime(gmtime(&mut now));
-        let mut loc: time_t = mktime(localtime(&mut now));
+        let utc: time_t = mktime(gmtime(&mut now));
+        let loc: time_t = mktime(localtime(&mut now));
         tza = ((loc - utc) * 1000 as libc::c_int as libc::c_long) as libc::c_double;
         once = 0 as libc::c_int;
     }
     tza
 }
-unsafe extern "C" fn DaylightSavingTA(mut t: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn DaylightSavingTA(t: libc::c_double) -> libc::c_double {
     0 as libc::c_int as libc::c_double
 }
-unsafe extern "C" fn pmod(mut x: libc::c_double, mut y: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn pmod(mut x: libc::c_double, y: libc::c_double) -> libc::c_double {
     x = fmod(x, y);
     if x < 0 as libc::c_int as libc::c_double {
         x += y;
     }
     x
 }
-unsafe extern "C" fn Day(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn Day(t: libc::c_double) -> libc::c_int {
     floor(t / (24.0f64 * 60.0f64 * 60.0f64 * 1000.0f64)) as libc::c_int
 }
-unsafe extern "C" fn TimeWithinDay(mut t: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn TimeWithinDay(t: libc::c_double) -> libc::c_double {
     pmod(t, 24.0f64 * 60.0f64 * 60.0f64 * 1000.0f64)
 }
-unsafe extern "C" fn DaysInYear(mut y: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn DaysInYear(y: libc::c_int) -> libc::c_int {
     if y % 4 as libc::c_int == 0 as libc::c_int
         && (y % 100 as libc::c_int != 0 || y % 400 as libc::c_int == 0 as libc::c_int)
     {
@@ -4586,19 +4535,19 @@ unsafe extern "C" fn DaysInYear(mut y: libc::c_int) -> libc::c_int {
         365 as libc::c_int
     }
 }
-unsafe extern "C" fn DayFromYear(mut y: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn DayFromYear(y: libc::c_int) -> libc::c_int {
     ((365 as libc::c_int * (y - 1970 as libc::c_int)) as libc::c_double
         + floor((y - 1969 as libc::c_int) as libc::c_double / 4.0f64)
         - floor((y - 1901 as libc::c_int) as libc::c_double / 100.0f64)
         + floor((y - 1601 as libc::c_int) as libc::c_double / 400.0f64)) as libc::c_int
 }
-unsafe extern "C" fn TimeFromYear(mut y: libc::c_int) -> libc::c_double {
+unsafe extern "C" fn TimeFromYear(y: libc::c_int) -> libc::c_double {
     DayFromYear(y) as libc::c_double * (24.0f64 * 60.0f64 * 60.0f64 * 1000.0f64)
 }
-unsafe extern "C" fn YearFromTime(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn YearFromTime(t: libc::c_double) -> libc::c_int {
     let mut y: libc::c_int = (floor(t / (24.0f64 * 60.0f64 * 60.0f64 * 1000.0f64 * 365.2425f64))
         + 1970 as libc::c_int as libc::c_double) as libc::c_int;
-    let mut t2: libc::c_double = TimeFromYear(y);
+    let t2: libc::c_double = TimeFromYear(y);
     if t2 > t {
         y -= 1;
         y;
@@ -4608,15 +4557,15 @@ unsafe extern "C" fn YearFromTime(mut t: libc::c_double) -> libc::c_int {
     }
     y
 }
-unsafe extern "C" fn InLeapYear(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn InLeapYear(t: libc::c_double) -> libc::c_int {
     (DaysInYear(YearFromTime(t)) == 366 as libc::c_int) as libc::c_int
 }
-unsafe extern "C" fn DayWithinYear(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn DayWithinYear(t: libc::c_double) -> libc::c_int {
     Day(t) - DayFromYear(YearFromTime(t))
 }
-unsafe extern "C" fn MonthFromTime(mut t: libc::c_double) -> libc::c_int {
-    let mut day: libc::c_int = DayWithinYear(t);
-    let mut leap: libc::c_int = InLeapYear(t);
+unsafe extern "C" fn MonthFromTime(t: libc::c_double) -> libc::c_int {
+    let day: libc::c_int = DayWithinYear(t);
+    let leap: libc::c_int = InLeapYear(t);
     if day < 31 as libc::c_int {
         return 0 as libc::c_int;
     }
@@ -4652,9 +4601,9 @@ unsafe extern "C" fn MonthFromTime(mut t: libc::c_double) -> libc::c_int {
     }
     11 as libc::c_int
 }
-unsafe extern "C" fn DateFromTime(mut t: libc::c_double) -> libc::c_int {
-    let mut day: libc::c_int = DayWithinYear(t);
-    let mut leap: libc::c_int = InLeapYear(t);
+unsafe extern "C" fn DateFromTime(t: libc::c_double) -> libc::c_int {
+    let day: libc::c_int = DayWithinYear(t);
+    let leap: libc::c_int = InLeapYear(t);
     match MonthFromTime(t) {
         0 => day + 1 as libc::c_int,
         1 => day - 30 as libc::c_int,
@@ -4670,42 +4619,42 @@ unsafe extern "C" fn DateFromTime(mut t: libc::c_double) -> libc::c_int {
         _ => day - 333 as libc::c_int - leap,
     }
 }
-unsafe extern "C" fn WeekDay(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn WeekDay(t: libc::c_double) -> libc::c_int {
     pmod(
         (Day(t) + 4 as libc::c_int) as libc::c_double,
         7 as libc::c_int as libc::c_double,
     ) as libc::c_int
 }
-unsafe extern "C" fn LocalTime(mut utc: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn LocalTime(utc: libc::c_double) -> libc::c_double {
     utc + LocalTZA() + DaylightSavingTA(utc)
 }
-unsafe extern "C" fn UTC(mut loc: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn UTC(loc: libc::c_double) -> libc::c_double {
     loc - LocalTZA() - DaylightSavingTA(loc - LocalTZA())
 }
-unsafe extern "C" fn HourFromTime(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn HourFromTime(t: libc::c_double) -> libc::c_int {
     pmod(floor(t / (60.0f64 * 60.0f64 * 1000.0f64)), 24.0f64) as libc::c_int
 }
-unsafe extern "C" fn MinFromTime(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn MinFromTime(t: libc::c_double) -> libc::c_int {
     pmod(floor(t / (60.0f64 * 1000.0f64)), 60.0f64) as libc::c_int
 }
-unsafe extern "C" fn SecFromTime(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn SecFromTime(t: libc::c_double) -> libc::c_int {
     pmod(floor(t / 1000.0f64), 60.0f64) as libc::c_int
 }
-unsafe extern "C" fn msFromTime(mut t: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn msFromTime(t: libc::c_double) -> libc::c_int {
     pmod(t, 1000.0f64) as libc::c_int
 }
 unsafe extern "C" fn MakeTime(
-    mut hour: libc::c_double,
-    mut min: libc::c_double,
-    mut sec: libc::c_double,
-    mut ms: libc::c_double,
+    hour: libc::c_double,
+    min: libc::c_double,
+    sec: libc::c_double,
+    ms: libc::c_double,
 ) -> libc::c_double {
     ((hour * 60.0f64 + min) * 60.0f64 + sec) * 1000.0f64 + ms
 }
 unsafe extern "C" fn MakeDay(
     mut y: libc::c_double,
     mut m: libc::c_double,
-    mut date: libc::c_double,
+    date: libc::c_double,
 ) -> libc::c_double {
     static mut firstDayOfMonth: [[libc::c_double; 12]; 2] = [
         [
@@ -4751,13 +4700,10 @@ unsafe extern "C" fn MakeDay(
         [(DaysInYear(y as libc::c_int) == 366 as libc::c_int) as libc::c_int as usize][im as usize];
     yd + md + date - 1 as libc::c_int as libc::c_double
 }
-unsafe extern "C" fn MakeDate(
-    mut day: libc::c_double,
-    mut time_0: libc::c_double,
-) -> libc::c_double {
+unsafe extern "C" fn MakeDate(day: libc::c_double, time_0: libc::c_double) -> libc::c_double {
     day * (24.0f64 * 60.0f64 * 60.0f64 * 1000.0f64) + time_0
 }
-unsafe extern "C" fn TimeClip(mut t: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn TimeClip(t: libc::c_double) -> libc::c_double {
     if t.is_finite() as i32 == 0 {
         return ::core::f32::NAN as libc::c_double;
     }
@@ -4771,9 +4717,9 @@ unsafe extern "C" fn TimeClip(mut t: libc::c_double) -> libc::c_double {
     }
 }
 unsafe extern "C" fn toint(
-    mut sp: *mut *const libc::c_char,
+    sp: *mut *const libc::c_char,
     mut w: libc::c_int,
-    mut v: *mut libc::c_int,
+    v: *mut libc::c_int,
 ) -> libc::c_int {
     let mut s: *const libc::c_char = *sp;
     *v = 0 as libc::c_int;
@@ -4848,7 +4794,7 @@ unsafe extern "C" fn parseDateTime(mut s: *const libc::c_char) -> libc::c_double
         } else if *s as libc::c_int == '+' as i32 || *s as libc::c_int == '-' as i32 {
             let mut tzh: libc::c_int = 0 as libc::c_int;
             let mut tzm: libc::c_int = 0 as libc::c_int;
-            let mut tzs: libc::c_int = if *s as libc::c_int == '+' as i32 {
+            let tzs: libc::c_int = if *s as libc::c_int == '+' as i32 {
                 1 as libc::c_int
             } else {
                 -(1 as libc::c_int)
@@ -4915,13 +4861,10 @@ unsafe extern "C" fn parseDateTime(mut s: *const libc::c_char) -> libc::c_double
     );
     t - tza as libc::c_double
 }
-unsafe extern "C" fn fmtdate(
-    mut buf: *mut libc::c_char,
-    mut t: libc::c_double,
-) -> *mut libc::c_char {
-    let mut y: libc::c_int = YearFromTime(t);
-    let mut m: libc::c_int = MonthFromTime(t);
-    let mut d: libc::c_int = DateFromTime(t);
+unsafe extern "C" fn fmtdate(buf: *mut libc::c_char, t: libc::c_double) -> *mut libc::c_char {
+    let y: libc::c_int = YearFromTime(t);
+    let m: libc::c_int = MonthFromTime(t);
+    let d: libc::c_int = DateFromTime(t);
     if t.is_finite() as i32 == 0 {
         return b"Invalid Date\0" as *const u8 as *const libc::c_char as *mut libc::c_char;
     }
@@ -4935,16 +4878,16 @@ unsafe extern "C" fn fmtdate(
     buf
 }
 unsafe extern "C" fn fmttime(
-    mut buf: *mut libc::c_char,
-    mut t: libc::c_double,
-    mut tza: libc::c_double,
+    buf: *mut libc::c_char,
+    t: libc::c_double,
+    tza: libc::c_double,
 ) -> *mut libc::c_char {
-    let mut H: libc::c_int = HourFromTime(t);
-    let mut M: libc::c_int = MinFromTime(t);
-    let mut S: libc::c_int = SecFromTime(t);
-    let mut ms: libc::c_int = msFromTime(t);
-    let mut tzh: libc::c_int = HourFromTime(fabs(tza));
-    let mut tzm: libc::c_int = MinFromTime(fabs(tza));
+    let H: libc::c_int = HourFromTime(t);
+    let M: libc::c_int = MinFromTime(t);
+    let S: libc::c_int = SecFromTime(t);
+    let ms: libc::c_int = msFromTime(t);
+    let tzh: libc::c_int = HourFromTime(fabs(tza));
+    let tzm: libc::c_int = MinFromTime(fabs(tza));
     if t.is_finite() as i32 == 0 {
         return b"Invalid Date\0" as *const u8 as *const libc::c_char as *mut libc::c_char;
     }
@@ -4983,9 +4926,9 @@ unsafe extern "C" fn fmttime(
     buf
 }
 unsafe extern "C" fn fmtdatetime(
-    mut buf: *mut libc::c_char,
-    mut t: libc::c_double,
-    mut tza: libc::c_double,
+    buf: *mut libc::c_char,
+    t: libc::c_double,
+    tza: libc::c_double,
 ) -> *mut libc::c_char {
     let mut dbuf: [libc::c_char; 20] = [0; 20];
     let mut tbuf: [libc::c_char; 20] = [0; 20];
@@ -5002,26 +4945,26 @@ unsafe extern "C" fn fmtdatetime(
     );
     buf
 }
-unsafe extern "C" fn js_todate(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_double {
-    let mut self_0: *mut js_Object = js_toobject(J, idx);
+unsafe extern "C" fn js_todate(J: *mut js_State, idx: libc::c_int) -> libc::c_double {
+    let self_0: *mut js_Object = js_toobject(J, idx);
     if (*self_0).type_0 as libc::c_uint != JS_CDATE as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a date\0" as *const u8 as *const libc::c_char);
     }
     (*self_0).u.number
 }
-unsafe extern "C" fn js_setdate(mut J: *mut js_State, mut idx: libc::c_int, mut t: libc::c_double) {
-    let mut self_0: *mut js_Object = js_toobject(J, idx);
+unsafe extern "C" fn js_setdate(J: *mut js_State, idx: libc::c_int, t: libc::c_double) {
+    let self_0: *mut js_Object = js_toobject(J, idx);
     if (*self_0).type_0 as libc::c_uint != JS_CDATE as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a date\0" as *const u8 as *const libc::c_char);
     }
     (*self_0).u.number = TimeClip(t);
     js_pushnumber(J, (*self_0).u.number);
 }
-unsafe extern "C" fn D_parse(mut J: *mut js_State) {
-    let mut t: libc::c_double = parseDateTime(js_tostring(J, 1 as libc::c_int));
+unsafe extern "C" fn D_parse(J: *mut js_State) {
+    let t: libc::c_double = parseDateTime(js_tostring(J, 1 as libc::c_int));
     js_pushnumber(J, t);
 }
-unsafe extern "C" fn D_UTC(mut J: *mut js_State) {
+unsafe extern "C" fn D_UTC(J: *mut js_State) {
     let mut y: libc::c_double = 0.;
     let mut m: libc::c_double = 0.;
     let mut d: libc::c_double = 0.;
@@ -5064,18 +5007,18 @@ unsafe extern "C" fn D_UTC(mut J: *mut js_State) {
     t = TimeClip(t);
     js_pushnumber(J, t);
 }
-unsafe extern "C" fn D_now(mut J: *mut js_State) {
+unsafe extern "C" fn D_now(J: *mut js_State) {
     js_pushnumber(J, Now());
 }
-unsafe extern "C" fn jsB_Date(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Date(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
     js_pushstring(
         J,
         fmtdatetime(buf.as_mut_ptr(), LocalTime(Now()), LocalTZA()),
     );
 }
-unsafe extern "C" fn jsB_new_Date(mut J: *mut js_State) {
-    let mut top: libc::c_int = js_gettop(J);
+unsafe extern "C" fn jsB_new_Date(J: *mut js_State) {
+    let top: libc::c_int = js_gettop(J);
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut t: libc::c_double = 0.;
     if top == 1 as libc::c_int {
@@ -5132,36 +5075,36 @@ unsafe extern "C" fn jsB_new_Date(mut J: *mut js_State) {
     (*obj).u.number = t;
     js_pushobject(J, obj);
 }
-unsafe extern "C" fn Dp_valueOf(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_valueOf(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     js_pushnumber(J, t);
 }
-unsafe extern "C" fn Dp_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toString(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     js_pushstring(J, fmtdatetime(buf.as_mut_ptr(), LocalTime(t), LocalTZA()));
 }
-unsafe extern "C" fn Dp_toDateString(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toDateString(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     js_pushstring(J, fmtdate(buf.as_mut_ptr(), LocalTime(t)));
 }
-unsafe extern "C" fn Dp_toTimeString(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toTimeString(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     js_pushstring(J, fmttime(buf.as_mut_ptr(), LocalTime(t), LocalTZA()));
 }
-unsafe extern "C" fn Dp_toUTCString(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toUTCString(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     js_pushstring(
         J,
         fmtdatetime(buf.as_mut_ptr(), t, 0 as libc::c_int as libc::c_double),
     );
 }
-unsafe extern "C" fn Dp_toISOString(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toISOString(J: *mut js_State) {
     let mut buf: [libc::c_char; 64] = [0; 64];
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_finite() as i32 == 0 {
         js_rangeerror(J, b"invalid date\0" as *const u8 as *const libc::c_char);
     }
@@ -5170,163 +5113,163 @@ unsafe extern "C" fn Dp_toISOString(mut J: *mut js_State) {
         fmtdatetime(buf.as_mut_ptr(), t, 0 as libc::c_int as libc::c_double),
     );
 }
-unsafe extern "C" fn Dp_getFullYear(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getFullYear(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, YearFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getMonth(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getMonth(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, MonthFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getDate(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getDate(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, DateFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getDay(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getDay(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, WeekDay(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getHours(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getHours(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, HourFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getMinutes(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getMinutes(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, MinFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getSeconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getSeconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, SecFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getMilliseconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getMilliseconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, msFromTime(LocalTime(t)) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCFullYear(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCFullYear(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, YearFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCMonth(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCMonth(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, MonthFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCDate(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCDate(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, DateFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCDay(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCDay(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, WeekDay(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCHours(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCHours(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, HourFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCMinutes(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCMinutes(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, MinFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCSeconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCSeconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, SecFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getUTCMilliseconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getUTCMilliseconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, msFromTime(t) as libc::c_double);
     };
 }
-unsafe extern "C" fn Dp_getTimezoneOffset(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
+unsafe extern "C" fn Dp_getTimezoneOffset(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
     if t.is_nan() as i32 != 0 {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, (t - LocalTime(t)) / (60.0f64 * 1000.0f64));
     };
 }
-unsafe extern "C" fn Dp_setTime(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_setTime(J: *mut js_State) {
     js_setdate(J, 0 as libc::c_int, js_tonumber(J, 1 as libc::c_int));
 }
-unsafe extern "C" fn Dp_setMilliseconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MinFromTime(t) as libc::c_double;
-    let mut s: libc::c_double = SecFromTime(t) as libc::c_double;
-    let mut ms: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn Dp_setMilliseconds(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = MinFromTime(t) as libc::c_double;
+    let s: libc::c_double = SecFromTime(t) as libc::c_double;
+    let ms: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_setdate(
         J,
         0 as libc::c_int,
         UTC(MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms))),
     );
 }
-unsafe extern "C" fn Dp_setSeconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MinFromTime(t) as libc::c_double;
-    let mut s: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut ms: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setSeconds(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = MinFromTime(t) as libc::c_double;
+    let s: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let ms: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5337,16 +5280,16 @@ unsafe extern "C" fn Dp_setSeconds(mut J: *mut js_State) {
         UTC(MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms))),
     );
 }
-unsafe extern "C" fn Dp_setMinutes(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut s: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setMinutes(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let s: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         SecFromTime(t) as libc::c_double
     };
-    let mut ms: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let ms: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5357,20 +5300,20 @@ unsafe extern "C" fn Dp_setMinutes(mut J: *mut js_State) {
         UTC(MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms))),
     );
 }
-unsafe extern "C" fn Dp_setHours(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut h: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setHours(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let h: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         MinFromTime(t) as libc::c_double
     };
-    let mut s: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let s: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         SecFromTime(t) as libc::c_double
     };
-    let mut ms: libc::c_double = if js_isdefined(J, 4 as libc::c_int) != 0 {
+    let ms: libc::c_double = if js_isdefined(J, 4 as libc::c_int) != 0 {
         js_tonumber(J, 4 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5381,22 +5324,22 @@ unsafe extern "C" fn Dp_setHours(mut J: *mut js_State) {
         UTC(MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms))),
     );
 }
-unsafe extern "C" fn Dp_setDate(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut y: libc::c_double = YearFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MonthFromTime(t) as libc::c_double;
-    let mut d: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn Dp_setDate(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let y: libc::c_double = YearFromTime(t) as libc::c_double;
+    let m: libc::c_double = MonthFromTime(t) as libc::c_double;
+    let d: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_setdate(
         J,
         0 as libc::c_int,
         UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))),
     );
 }
-unsafe extern "C" fn Dp_setMonth(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut y: libc::c_double = YearFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut d: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setMonth(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let y: libc::c_double = YearFromTime(t) as libc::c_double;
+    let m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let d: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         DateFromTime(t) as libc::c_double
@@ -5407,15 +5350,15 @@ unsafe extern "C" fn Dp_setMonth(mut J: *mut js_State) {
         UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))),
     );
 }
-unsafe extern "C" fn Dp_setFullYear(mut J: *mut js_State) {
-    let mut t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
-    let mut y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setFullYear(J: *mut js_State) {
+    let t: libc::c_double = LocalTime(js_todate(J, 0 as libc::c_int));
+    let y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         MonthFromTime(t) as libc::c_double
     };
-    let mut d: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let d: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         DateFromTime(t) as libc::c_double
@@ -5426,24 +5369,24 @@ unsafe extern "C" fn Dp_setFullYear(mut J: *mut js_State) {
         UTC(MakeDate(MakeDay(y, m, d), TimeWithinDay(t))),
     );
 }
-unsafe extern "C" fn Dp_setUTCMilliseconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MinFromTime(t) as libc::c_double;
-    let mut s: libc::c_double = SecFromTime(t) as libc::c_double;
-    let mut ms: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn Dp_setUTCMilliseconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = MinFromTime(t) as libc::c_double;
+    let s: libc::c_double = SecFromTime(t) as libc::c_double;
+    let ms: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_setdate(
         J,
         0 as libc::c_int,
         MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms)),
     );
 }
-unsafe extern "C" fn Dp_setUTCSeconds(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MinFromTime(t) as libc::c_double;
-    let mut s: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut ms: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setUTCSeconds(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = MinFromTime(t) as libc::c_double;
+    let s: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let ms: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5454,16 +5397,16 @@ unsafe extern "C" fn Dp_setUTCSeconds(mut J: *mut js_State) {
         MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms)),
     );
 }
-unsafe extern "C" fn Dp_setUTCMinutes(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut h: libc::c_double = HourFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut s: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setUTCMinutes(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let h: libc::c_double = HourFromTime(t) as libc::c_double;
+    let m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let s: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         SecFromTime(t) as libc::c_double
     };
-    let mut ms: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let ms: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5474,20 +5417,20 @@ unsafe extern "C" fn Dp_setUTCMinutes(mut J: *mut js_State) {
         MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms)),
     );
 }
-unsafe extern "C" fn Dp_setUTCHours(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut h: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setUTCHours(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let h: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         HourFromTime(t) as libc::c_double
     };
-    let mut s: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let s: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         SecFromTime(t) as libc::c_double
     };
-    let mut ms: libc::c_double = if js_isdefined(J, 4 as libc::c_int) != 0 {
+    let ms: libc::c_double = if js_isdefined(J, 4 as libc::c_int) != 0 {
         js_tonumber(J, 4 as libc::c_int)
     } else {
         msFromTime(t) as libc::c_double
@@ -5498,22 +5441,22 @@ unsafe extern "C" fn Dp_setUTCHours(mut J: *mut js_State) {
         MakeDate(Day(t) as libc::c_double, MakeTime(h, m, s, ms)),
     );
 }
-unsafe extern "C" fn Dp_setUTCDate(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut y: libc::c_double = YearFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = MonthFromTime(t) as libc::c_double;
-    let mut d: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn Dp_setUTCDate(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let y: libc::c_double = YearFromTime(t) as libc::c_double;
+    let m: libc::c_double = MonthFromTime(t) as libc::c_double;
+    let d: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_setdate(
         J,
         0 as libc::c_int,
         MakeDate(MakeDay(y, m, d), TimeWithinDay(t)),
     );
 }
-unsafe extern "C" fn Dp_setUTCMonth(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut y: libc::c_double = YearFromTime(t) as libc::c_double;
-    let mut m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut d: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setUTCMonth(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let y: libc::c_double = YearFromTime(t) as libc::c_double;
+    let m: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let d: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         DateFromTime(t) as libc::c_double
@@ -5524,15 +5467,15 @@ unsafe extern "C" fn Dp_setUTCMonth(mut J: *mut js_State) {
         MakeDate(MakeDay(y, m, d), TimeWithinDay(t)),
     );
 }
-unsafe extern "C" fn Dp_setUTCFullYear(mut J: *mut js_State) {
-    let mut t: libc::c_double = js_todate(J, 0 as libc::c_int);
-    let mut y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
+unsafe extern "C" fn Dp_setUTCFullYear(J: *mut js_State) {
+    let t: libc::c_double = js_todate(J, 0 as libc::c_int);
+    let y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let m: libc::c_double = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tonumber(J, 2 as libc::c_int)
     } else {
         MonthFromTime(t) as libc::c_double
     };
-    let mut d: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
+    let d: libc::c_double = if js_isdefined(J, 3 as libc::c_int) != 0 {
         js_tonumber(J, 3 as libc::c_int)
     } else {
         DateFromTime(t) as libc::c_double
@@ -5543,7 +5486,7 @@ unsafe extern "C" fn Dp_setUTCFullYear(mut J: *mut js_State) {
         MakeDate(MakeDay(y, m, d), TimeWithinDay(t)),
     );
 }
-unsafe extern "C" fn Dp_toJSON(mut J: *mut js_State) {
+unsafe extern "C" fn Dp_toJSON(J: *mut js_State) {
     js_copy(J, 0 as libc::c_int);
     js_toprimitive(J, -(1 as libc::c_int), JS_HNUMBER as libc::c_int);
     if js_isnumber(J, -(1 as libc::c_int)) != 0
@@ -5568,7 +5511,7 @@ unsafe extern "C" fn Dp_toJSON(mut J: *mut js_State) {
     js_call(J, 0 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initdate(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initdate(J: *mut js_State) {
     (*(*J).Date_prototype).u.number = 0 as libc::c_int as libc::c_double;
     js_pushobject(J, (*J).Date_prototype);
     jsB_propf(
@@ -7277,21 +7220,17 @@ static mut powers_ten_e: [libc::c_int; 687] = [
     1073 as libc::c_int,
     1076 as libc::c_int,
 ];
-unsafe extern "C" fn cached_power(mut k: libc::c_int) -> diy_fp_t {
+unsafe extern "C" fn cached_power(k: libc::c_int) -> diy_fp_t {
     let mut res: diy_fp_t = diy_fp_t { f: 0, e: 0 };
-    let mut index: libc::c_int = 343 as libc::c_int + k;
+    let index: libc::c_int = 343 as libc::c_int + k;
     res.f = powers_ten[index as usize];
     res.e = powers_ten_e[index as usize];
     res
 }
-unsafe extern "C" fn k_comp(
-    mut e: libc::c_int,
-    mut alpha: libc::c_int,
-    mut gamma: libc::c_int,
-) -> libc::c_int {
+unsafe extern "C" fn k_comp(e: libc::c_int, alpha: libc::c_int, gamma: libc::c_int) -> libc::c_int {
     ceil((alpha - e + 63 as libc::c_int) as libc::c_double * 0.30102999566398114f64) as libc::c_int
 }
-unsafe extern "C" fn minus(mut x: diy_fp_t, mut y: diy_fp_t) -> diy_fp_t {
+unsafe extern "C" fn minus(x: diy_fp_t, y: diy_fp_t) -> diy_fp_t {
     let mut r: diy_fp_t = diy_fp_t { f: 0, e: 0 };
     if x.e == y.e {
     } else {
@@ -7349,7 +7288,7 @@ unsafe extern "C" fn minus(mut x: diy_fp_t, mut y: diy_fp_t) -> diy_fp_t {
     r.e = x.e;
     r
 }
-unsafe extern "C" fn multiply(mut x: diy_fp_t, mut y: diy_fp_t) -> diy_fp_t {
+unsafe extern "C" fn multiply(x: diy_fp_t, y: diy_fp_t) -> diy_fp_t {
     let mut a: uint64_t = 0;
     let mut b: uint64_t = 0;
     let mut c: uint64_t = 0;
@@ -7360,7 +7299,7 @@ unsafe extern "C" fn multiply(mut x: diy_fp_t, mut y: diy_fp_t) -> diy_fp_t {
     let mut bd: uint64_t = 0;
     let mut tmp: uint64_t = 0;
     let mut r: diy_fp_t = diy_fp_t { f: 0, e: 0 };
-    let mut M32: uint64_t = 0xffffffff as libc::c_uint as uint64_t;
+    let M32: uint64_t = 0xffffffff as libc::c_uint as uint64_t;
     a = x.f >> 32 as libc::c_int;
     b = x.f & M32;
     c = y.f >> 32 as libc::c_int;
@@ -7391,11 +7330,11 @@ unsafe extern "C" fn double_to_uint64(mut d: libc::c_double) -> uint64_t {
     );
     n
 }
-unsafe extern "C" fn double2diy_fp(mut d: libc::c_double) -> diy_fp_t {
-    let mut d64: uint64_t = double_to_uint64(d);
-    let mut biased_e: libc::c_int = ((d64 & 0x7ff0000000000000 as libc::c_long as libc::c_ulong)
+unsafe extern "C" fn double2diy_fp(d: libc::c_double) -> diy_fp_t {
+    let d64: uint64_t = double_to_uint64(d);
+    let biased_e: libc::c_int = ((d64 & 0x7ff0000000000000 as libc::c_long as libc::c_ulong)
         >> 52 as libc::c_int) as libc::c_int;
-    let mut significand: uint64_t = d64 & 0xfffffffffffff as libc::c_long as libc::c_ulong;
+    let significand: uint64_t = d64 & 0xfffffffffffff as libc::c_long as libc::c_ulong;
     let mut res: diy_fp_t = diy_fp_t { f: 0, e: 0 };
     if biased_e != 0 as libc::c_int {
         res.f = significand.wrapping_add(0x10000000000000 as libc::c_long as libc::c_ulong);
@@ -7406,7 +7345,7 @@ unsafe extern "C" fn double2diy_fp(mut d: libc::c_double) -> diy_fp_t {
     }
     res
 }
-unsafe extern "C" fn normalize_boundary(mut in_0: diy_fp_t) -> diy_fp_t {
+unsafe extern "C" fn normalize_boundary(in_0: diy_fp_t) -> diy_fp_t {
     let mut res: diy_fp_t = in_0;
     while res.f & ((0x10000000000000 as libc::c_long) << 1 as libc::c_int) as libc::c_ulong == 0 {
         res.f <<= 1 as libc::c_int;
@@ -7418,14 +7357,14 @@ unsafe extern "C" fn normalize_boundary(mut in_0: diy_fp_t) -> diy_fp_t {
     res
 }
 unsafe extern "C" fn normalized_boundaries(
-    mut d: libc::c_double,
-    mut out_m_minus: *mut diy_fp_t,
-    mut out_m_plus: *mut diy_fp_t,
+    d: libc::c_double,
+    out_m_minus: *mut diy_fp_t,
+    out_m_plus: *mut diy_fp_t,
 ) {
-    let mut v: diy_fp_t = double2diy_fp(d);
+    let v: diy_fp_t = double2diy_fp(d);
     let mut pl: diy_fp_t = diy_fp_t { f: 0, e: 0 };
     let mut mi: diy_fp_t = diy_fp_t { f: 0, e: 0 };
-    let mut significand_is_zero: libc::c_int =
+    let significand_is_zero: libc::c_int =
         (v.f == 0x10000000000000 as libc::c_long as libc::c_ulong) as libc::c_int;
     pl.f = (v.f << 1 as libc::c_int).wrapping_add(1 as libc::c_int as libc::c_ulong);
     pl.e = v.e - 1 as libc::c_int;
@@ -7443,11 +7382,11 @@ unsafe extern "C" fn normalized_boundaries(
     *out_m_minus = mi;
 }
 unsafe extern "C" fn digit_gen(
-    mut Mp: diy_fp_t,
+    Mp: diy_fp_t,
     mut delta: diy_fp_t,
-    mut buffer: *mut libc::c_char,
-    mut len: *mut libc::c_int,
-    mut K: *mut libc::c_int,
+    buffer: *mut libc::c_char,
+    len: *mut libc::c_int,
+    K: *mut libc::c_int,
 ) {
     let mut div: uint32_t = 0;
     let mut p1: uint32_t = 0;
@@ -7501,9 +7440,9 @@ unsafe extern "C" fn digit_gen(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_grisu2(
-    mut v: libc::c_double,
-    mut buffer: *mut libc::c_char,
-    mut K: *mut libc::c_int,
+    v: libc::c_double,
+    buffer: *mut libc::c_char,
+    K: *mut libc::c_int,
 ) -> libc::c_int {
     let mut length: libc::c_int = 0;
     let mut mk: libc::c_int = 0;
@@ -7513,9 +7452,9 @@ pub unsafe extern "C" fn js_grisu2(
     let mut Wp: diy_fp_t = diy_fp_t { f: 0, e: 0 };
     let mut Wm: diy_fp_t = diy_fp_t { f: 0, e: 0 };
     let mut delta: diy_fp_t = diy_fp_t { f: 0, e: 0 };
-    let mut q: libc::c_int = 64 as libc::c_int;
-    let mut alpha: libc::c_int = -(59 as libc::c_int);
-    let mut gamma: libc::c_int = -(56 as libc::c_int);
+    let q: libc::c_int = 64 as libc::c_int;
+    let alpha: libc::c_int = -(59 as libc::c_int);
+    let gamma: libc::c_int = -(56 as libc::c_int);
     normalized_boundaries(v, &mut w_m, &mut w_p);
     mk = k_comp(w_p.e + q, alpha, gamma);
     c_mk = cached_power(mk);
@@ -7536,8 +7475,8 @@ static mut powersOf10: [libc::c_double; 9] = [
 ];
 #[no_mangle]
 pub unsafe extern "C" fn js_strtod(
-    mut string: *const libc::c_char,
-    mut endPtr: *mut *mut libc::c_char,
+    string: *const libc::c_char,
+    endPtr: *mut *mut libc::c_char,
 ) -> libc::c_double {
     let mut sign: libc::c_int = 0;
     let mut expSign: libc::c_int = 0 as libc::c_int;
@@ -7688,16 +7627,16 @@ pub unsafe extern "C" fn js_strtod(
     }
     fraction
 }
-unsafe extern "C" fn jsB_stacktrace(mut J: *mut js_State, mut skip: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn jsB_stacktrace(J: *mut js_State, skip: libc::c_int) -> libc::c_int {
     let mut buf: [libc::c_char; 256] = [0; 256];
     let mut n: libc::c_int = (*J).tracetop - skip;
     if n <= 0 as libc::c_int {
         return 0 as libc::c_int;
     }
     while n > 0 as libc::c_int {
-        let mut name: *const libc::c_char = (*J).trace[n as usize].name;
-        let mut file: *const libc::c_char = (*J).trace[n as usize].file;
-        let mut line: libc::c_int = (*J).trace[n as usize].line;
+        let name: *const libc::c_char = (*J).trace[n as usize].name;
+        let file: *const libc::c_char = (*J).trace[n as usize].file;
+        let line: libc::c_int = (*J).trace[n as usize].line;
         if line > 0 as libc::c_int {
             if *name.offset(0 as libc::c_int as isize) != 0 {
                 snprintf(
@@ -7735,7 +7674,7 @@ unsafe extern "C" fn jsB_stacktrace(mut J: *mut js_State, mut skip: libc::c_int)
     }
     1 as libc::c_int
 }
-unsafe extern "C" fn Ep_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Ep_toString(J: *mut js_State) {
     let mut name: *const libc::c_char = b"Error\0" as *const u8 as *const libc::c_char;
     let mut message: *const libc::c_char = b"\0" as *const u8 as *const libc::c_char;
     if js_isobject(J, -(1 as libc::c_int)) == 0 {
@@ -7769,10 +7708,7 @@ unsafe extern "C" fn Ep_toString(mut J: *mut js_State) {
         js_concat(J);
     };
 }
-unsafe extern "C" fn jsB_ErrorX(
-    mut J: *mut js_State,
-    mut prototype: *mut js_Object,
-) -> libc::c_int {
+unsafe extern "C" fn jsB_ErrorX(J: *mut js_State, prototype: *mut js_Object) -> libc::c_int {
     js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
     if js_isdefined(J, 1 as libc::c_int) != 0 {
         js_pushstring(J, js_tostring(J, 1 as libc::c_int));
@@ -7794,9 +7730,9 @@ unsafe extern "C" fn jsB_ErrorX(
     1 as libc::c_int
 }
 unsafe extern "C" fn js_newerrorx(
-    mut J: *mut js_State,
-    mut message: *const libc::c_char,
-    mut prototype: *mut js_Object,
+    J: *mut js_State,
+    message: *const libc::c_char,
+    prototype: *mut js_Object,
 ) {
     js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
     js_pushstring(J, message);
@@ -7814,15 +7750,11 @@ unsafe extern "C" fn js_newerrorx(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).Error_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_error(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+pub unsafe extern "C" fn js_error(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
     ap = args.clone();
@@ -7835,15 +7767,11 @@ pub unsafe extern "C" fn js_error(
     js_newerrorx(J, buf.as_mut_ptr(), (*J).Error_prototype);
     js_throw(J);
 }
-unsafe extern "C" fn jsB_Error(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Error(J: *mut js_State) {
     jsB_ErrorX(J, (*J).Error_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_evalerror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+pub unsafe extern "C" fn js_evalerror(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
     ap = args.clone();
@@ -7856,22 +7784,18 @@ pub unsafe extern "C" fn js_evalerror(
     js_newerrorx(J, buf.as_mut_ptr(), (*J).EvalError_prototype);
     js_throw(J);
 }
-unsafe extern "C" fn jsB_EvalError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_EvalError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).EvalError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newevalerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newevalerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).EvalError_prototype);
 }
-unsafe extern "C" fn jsB_RangeError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_RangeError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).RangeError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rangeerror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+pub unsafe extern "C" fn js_rangeerror(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
     ap = args.clone();
@@ -7885,21 +7809,21 @@ pub unsafe extern "C" fn js_rangeerror(
     js_throw(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newrangeerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newrangeerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).RangeError_prototype);
 }
-unsafe extern "C" fn jsB_ReferenceError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_ReferenceError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).ReferenceError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newreferenceerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newreferenceerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).ReferenceError_prototype);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_referenceerror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
+    J: *mut js_State,
+    fmt: *const libc::c_char,
+    args: ...
 ) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
@@ -7913,14 +7837,14 @@ pub unsafe extern "C" fn js_referenceerror(
     js_newerrorx(J, buf.as_mut_ptr(), (*J).ReferenceError_prototype);
     js_throw(J);
 }
-unsafe extern "C" fn jsB_SyntaxError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_SyntaxError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).SyntaxError_prototype);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_syntaxerror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
+    J: *mut js_State,
+    fmt: *const libc::c_char,
+    args: ...
 ) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
@@ -7935,15 +7859,11 @@ pub unsafe extern "C" fn js_syntaxerror(
     js_throw(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newsyntaxerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newsyntaxerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).SyntaxError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_typeerror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+pub unsafe extern "C" fn js_typeerror(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
     ap = args.clone();
@@ -7957,18 +7877,14 @@ pub unsafe extern "C" fn js_typeerror(
     js_throw(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newtypeerror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newtypeerror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).TypeError_prototype);
 }
-unsafe extern "C" fn jsB_TypeError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_TypeError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).TypeError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_urierror(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+pub unsafe extern "C" fn js_urierror(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 256] = [0; 256];
     ap = args.clone();
@@ -7982,14 +7898,14 @@ pub unsafe extern "C" fn js_urierror(
     js_throw(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newurierror(mut J: *mut js_State, mut s: *const libc::c_char) {
+pub unsafe extern "C" fn js_newurierror(J: *mut js_State, s: *const libc::c_char) {
     js_newerrorx(J, s, (*J).URIError_prototype);
 }
-unsafe extern "C" fn jsB_URIError(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_URIError(J: *mut js_State) {
     jsB_ErrorX(J, (*J).URIError_prototype);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initerror(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initerror(J: *mut js_State) {
     js_pushobject(J, (*J).Error_prototype);
     jsB_props(
         J,
@@ -8123,9 +8039,9 @@ pub unsafe extern "C" fn jsB_initerror(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsB_Function(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Function(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
     let mut body: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut parse: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -8169,11 +8085,11 @@ unsafe extern "C" fn jsB_Function(mut J: *mut js_State) {
     jsP_freeparse(J);
     js_newfunction(J, fun, (*J).GE);
 }
-unsafe extern "C" fn jsB_Function_prototype(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Function_prototype(J: *mut js_State) {
     js_pushundefined(J);
 }
-unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Fp_toString(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
     let mut i: libc::c_int = 0;
     if js_iscallable(J, 0 as libc::c_int) == 0 {
@@ -8182,7 +8098,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
     if (*self_0).type_0 as libc::c_uint == JS_CFUNCTION as libc::c_int as libc::c_uint
         || (*self_0).type_0 as libc::c_uint == JS_CSCRIPT as libc::c_int as libc::c_uint
     {
-        let mut F: *mut js_Function = (*self_0).u.f.function;
+        let F: *mut js_Function = (*self_0).u.f.function;
         if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
             js_free(J, sb as *mut libc::c_void);
             js_throw(J);
@@ -8236,7 +8152,7 @@ unsafe extern "C" fn Fp_toString(mut J: *mut js_State) {
         js_pushliteral(J, b"function () { }\0" as *const u8 as *const libc::c_char);
     };
 }
-unsafe extern "C" fn Fp_apply(mut J: *mut js_State) {
+unsafe extern "C" fn Fp_apply(J: *mut js_State) {
     let mut i: libc::c_int = 0;
     let mut n: libc::c_int = 0;
     if js_iscallable(J, 0 as libc::c_int) == 0 {
@@ -8260,9 +8176,9 @@ unsafe extern "C" fn Fp_apply(mut J: *mut js_State) {
     }
     js_call(J, n);
 }
-unsafe extern "C" fn Fp_call(mut J: *mut js_State) {
+unsafe extern "C" fn Fp_call(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     if js_iscallable(J, 0 as libc::c_int) == 0 {
         js_typeerror(J, b"not a function\0" as *const u8 as *const libc::c_char);
     }
@@ -8274,8 +8190,8 @@ unsafe extern "C" fn Fp_call(mut J: *mut js_State) {
     }
     js_call(J, top - 2 as libc::c_int);
 }
-unsafe extern "C" fn callbound(mut J: *mut js_State) {
-    let mut top: libc::c_int = js_gettop(J);
+unsafe extern "C" fn callbound(J: *mut js_State) {
+    let top: libc::c_int = js_gettop(J);
     let mut i: libc::c_int = 0;
     let mut fun: libc::c_int = 0;
     let mut args: libc::c_int = 0;
@@ -8317,8 +8233,8 @@ unsafe extern "C" fn callbound(mut J: *mut js_State) {
     }
     js_call(J, n + top - 1 as libc::c_int);
 }
-unsafe extern "C" fn constructbound(mut J: *mut js_State) {
-    let mut top: libc::c_int = js_gettop(J);
+unsafe extern "C" fn constructbound(J: *mut js_State) {
+    let top: libc::c_int = js_gettop(J);
     let mut i: libc::c_int = 0;
     let mut fun: libc::c_int = 0;
     let mut args: libc::c_int = 0;
@@ -8355,9 +8271,9 @@ unsafe extern "C" fn constructbound(mut J: *mut js_State) {
     }
     js_construct(J, n + top - 1 as libc::c_int);
 }
-unsafe extern "C" fn Fp_bind(mut J: *mut js_State) {
+unsafe extern "C" fn Fp_bind(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut n: libc::c_int = 0;
     if js_iscallable(J, 0 as libc::c_int) == 0 {
         js_typeerror(J, b"not a function\0" as *const u8 as *const libc::c_char);
@@ -8410,7 +8326,7 @@ unsafe extern "C" fn Fp_bind(mut J: *mut js_State) {
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initfunction(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initfunction(J: *mut js_State) {
     (*(*J).Function_prototype).u.c.name =
         b"Function.prototype\0" as *const u8 as *const libc::c_char;
     (*(*J).Function_prototype).u.c.function =
@@ -8455,16 +8371,16 @@ pub unsafe extern "C" fn jsB_initfunction(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsG_freeenvironment(mut J: *mut js_State, mut env: *mut js_Environment) {
+unsafe extern "C" fn jsG_freeenvironment(J: *mut js_State, env: *mut js_Environment) {
     js_free(J, env as *mut libc::c_void);
 }
-unsafe extern "C" fn jsG_freefunction(mut J: *mut js_State, mut fun: *mut js_Function) {
+unsafe extern "C" fn jsG_freefunction(J: *mut js_State, fun: *mut js_Function) {
     js_free(J, (*fun).funtab as *mut libc::c_void);
     js_free(J, (*fun).vartab as *mut libc::c_void);
     js_free(J, (*fun).code as *mut libc::c_void);
     js_free(J, fun as *mut libc::c_void);
 }
-unsafe extern "C" fn jsG_freeproperty(mut J: *mut js_State, mut node: *mut js_Property) {
+unsafe extern "C" fn jsG_freeproperty(J: *mut js_State, node: *mut js_Property) {
     if (*(*node).left).level != 0 {
         jsG_freeproperty(J, (*node).left);
     }
@@ -8473,14 +8389,14 @@ unsafe extern "C" fn jsG_freeproperty(mut J: *mut js_State, mut node: *mut js_Pr
     }
     js_free(J, node as *mut libc::c_void);
 }
-unsafe extern "C" fn jsG_freeiterator(mut J: *mut js_State, mut node: *mut js_Iterator) {
+unsafe extern "C" fn jsG_freeiterator(J: *mut js_State, mut node: *mut js_Iterator) {
     while !node.is_null() {
-        let mut next_0: *mut js_Iterator = (*node).next;
+        let next_0: *mut js_Iterator = (*node).next;
         js_free(J, node as *mut libc::c_void);
         node = next_0;
     }
 }
-unsafe extern "C" fn jsG_freeobject(mut J: *mut js_State, mut obj: *mut js_Object) {
+unsafe extern "C" fn jsG_freeobject(J: *mut js_State, obj: *mut js_Object) {
     if (*(*obj).properties).level != 0 {
         jsG_freeproperty(J, (*obj).properties);
     }
@@ -8513,20 +8429,12 @@ unsafe extern "C" fn jsG_freeobject(mut J: *mut js_State, mut obj: *mut js_Objec
     }
     js_free(J, obj as *mut libc::c_void);
 }
-unsafe extern "C" fn jsG_markobject(
-    mut J: *mut js_State,
-    mut mark: libc::c_int,
-    mut obj: *mut js_Object,
-) {
+unsafe extern "C" fn jsG_markobject(J: *mut js_State, mark: libc::c_int, obj: *mut js_Object) {
     (*obj).gcmark = mark;
     (*obj).gcroot = (*J).gcroot;
     (*J).gcroot = obj;
 }
-unsafe extern "C" fn jsG_markfunction(
-    mut J: *mut js_State,
-    mut mark: libc::c_int,
-    mut fun: *mut js_Function,
-) {
+unsafe extern "C" fn jsG_markfunction(J: *mut js_State, mark: libc::c_int, fun: *mut js_Function) {
     let mut i: libc::c_int = 0;
     (*fun).gcmark = mark;
     i = 0 as libc::c_int;
@@ -8539,8 +8447,8 @@ unsafe extern "C" fn jsG_markfunction(
     }
 }
 unsafe extern "C" fn jsG_markenvironment(
-    mut J: *mut js_State,
-    mut mark: libc::c_int,
+    J: *mut js_State,
+    mark: libc::c_int,
     mut env: *mut js_Environment,
 ) {
     loop {
@@ -8554,11 +8462,7 @@ unsafe extern "C" fn jsG_markenvironment(
         }
     }
 }
-unsafe extern "C" fn jsG_markproperty(
-    mut J: *mut js_State,
-    mut mark: libc::c_int,
-    mut node: *mut js_Property,
-) {
+unsafe extern "C" fn jsG_markproperty(J: *mut js_State, mark: libc::c_int, node: *mut js_Property) {
     if (*(*node).left).level != 0 {
         jsG_markproperty(J, mark, (*node).left);
     }
@@ -8582,11 +8486,7 @@ unsafe extern "C" fn jsG_markproperty(
         jsG_markobject(J, mark, (*node).setter);
     }
 }
-unsafe extern "C" fn jsG_scanobject(
-    mut J: *mut js_State,
-    mut mark: libc::c_int,
-    mut obj: *mut js_Object,
-) {
+unsafe extern "C" fn jsG_scanobject(J: *mut js_State, mark: libc::c_int, obj: *mut js_Object) {
     if (*(*obj).properties).level != 0 {
         jsG_markproperty(J, mark, (*obj).properties);
     }
@@ -8599,7 +8499,7 @@ unsafe extern "C" fn jsG_scanobject(
         let mut i: libc::c_int = 0;
         i = 0 as libc::c_int;
         while i < (*obj).u.a.flat_length {
-            let mut v: *mut js_Value = &mut *((*obj).u.a.array).offset(i as isize) as *mut js_Value;
+            let v: *mut js_Value = &mut *((*obj).u.a.array).offset(i as isize) as *mut js_Value;
             if (*v).t.type_0 as libc::c_int == JS_TMEMSTR as libc::c_int
                 && (*(*v).u.memstr).gcmark as libc::c_int != mark
             {
@@ -8630,7 +8530,7 @@ unsafe extern "C" fn jsG_scanobject(
         }
     }
 }
-unsafe extern "C" fn jsG_markstack(mut J: *mut js_State, mut mark: libc::c_int) {
+unsafe extern "C" fn jsG_markstack(J: *mut js_State, mark: libc::c_int) {
     let mut v: *mut js_Value = (*J).stack;
     let mut n: libc::c_int = (*J).top;
     loop {
@@ -8654,7 +8554,7 @@ unsafe extern "C" fn jsG_markstack(mut J: *mut js_State, mut mark: libc::c_int) 
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_gc(mut J: *mut js_State, mut report: libc::c_int) {
+pub unsafe extern "C" fn js_gc(J: *mut js_State, report: libc::c_int) {
     let mut fun: *mut js_Function = std::ptr::null_mut::<js_Function>();
     let mut nextfun: *mut js_Function = std::ptr::null_mut::<js_Function>();
     let mut prevnextfun: *mut *mut js_Function = std::ptr::null_mut::<*mut js_Function>();
@@ -8786,17 +8686,17 @@ pub unsafe extern "C" fn js_gc(mut J: *mut js_State, mut report: libc::c_int) {
         nstr;
         str = nextstr;
     }
-    let mut ntot: libc::c_uint = nenv
+    let ntot: libc::c_uint = nenv
         .wrapping_add(nfun)
         .wrapping_add(nobj)
         .wrapping_add(nstr)
         .wrapping_add(nprop);
-    let mut gtot: libc::c_uint = genv
+    let gtot: libc::c_uint = genv
         .wrapping_add(gfun)
         .wrapping_add(gobj)
         .wrapping_add(gstr)
         .wrapping_add(gprop);
-    let mut remaining: libc::c_uint = ntot.wrapping_sub(gtot);
+    let remaining: libc::c_uint = ntot.wrapping_sub(gtot);
     (*J).gccounter = remaining;
     (*J).gcthresh = (remaining as libc::c_double * 5.0f64) as libc::c_uint;
     if report != 0 {
@@ -8822,7 +8722,7 @@ pub unsafe extern "C" fn js_gc(mut J: *mut js_State, mut report: libc::c_int) {
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_freestate(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_freestate(J: *mut js_State) {
     let mut fun: *mut js_Function = std::ptr::null_mut::<js_Function>();
     let mut nextfun: *mut js_Function = std::ptr::null_mut::<js_Function>();
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -8873,11 +8773,7 @@ pub unsafe extern "C" fn js_freestate(mut J: *mut js_State) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn js_putc(
-    mut J: *mut js_State,
-    mut sbp: *mut *mut js_Buffer,
-    mut c: libc::c_int,
-) {
+pub unsafe extern "C" fn js_putc(J: *mut js_State, sbp: *mut *mut js_Buffer, c: libc::c_int) {
     let mut sb: *mut js_Buffer = *sbp;
     if sb.is_null() {
         sb = Box::into_raw(Box::new(js_Buffer {
@@ -8890,8 +8786,8 @@ pub unsafe extern "C" fn js_putc(
 
 #[no_mangle]
 pub unsafe extern "C" fn js_puts(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
     mut s: *const libc::c_char,
 ) {
     while *s != 0 {
@@ -8902,10 +8798,10 @@ pub unsafe extern "C" fn js_puts(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_putm(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
     mut s: *const libc::c_char,
-    mut e: *const libc::c_char,
+    e: *const libc::c_char,
 ) {
     while s < e {
         let fresh28 = s;
@@ -8924,18 +8820,18 @@ static mut jsS_sentinel: js_StringNode = unsafe {
     }
 };
 unsafe extern "C" fn jsS_newstringnode(
-    mut J: *mut js_State,
-    mut string: *const libc::c_char,
-    mut result: *mut *const libc::c_char,
+    J: *mut js_State,
+    string: *const libc::c_char,
+    result: *mut *const libc::c_char,
 ) -> *mut js_StringNode {
-    let mut n: size_t = strlen(string);
+    let n: size_t = strlen(string);
     if n > ((1 as libc::c_int) << 28 as libc::c_int) as libc::c_ulong {
         js_rangeerror(
             J,
             b"invalid string length\0" as *const u8 as *const libc::c_char,
         );
     }
-    let mut node: *mut js_StringNode = js_malloc(
+    let node: *mut js_StringNode = js_malloc(
         J,
         (20 as libc::c_ulong as libc::c_int as libc::c_ulong)
             .wrapping_add(n)
@@ -8954,7 +8850,7 @@ unsafe extern "C" fn jsS_newstringnode(
 }
 unsafe extern "C" fn jsS_skew(mut node: *mut js_StringNode) -> *mut js_StringNode {
     if (*(*node).left).level == (*node).level {
-        let mut temp: *mut js_StringNode = node;
+        let temp: *mut js_StringNode = node;
         node = (*node).left;
         (*temp).left = (*node).right;
         (*node).right = temp;
@@ -8963,7 +8859,7 @@ unsafe extern "C" fn jsS_skew(mut node: *mut js_StringNode) -> *mut js_StringNod
 }
 unsafe extern "C" fn jsS_split(mut node: *mut js_StringNode) -> *mut js_StringNode {
     if (*(*(*node).right).right).level == (*node).level {
-        let mut temp: *mut js_StringNode = node;
+        let temp: *mut js_StringNode = node;
         node = (*node).right;
         (*temp).right = (*node).left;
         (*node).left = temp;
@@ -8973,13 +8869,13 @@ unsafe extern "C" fn jsS_split(mut node: *mut js_StringNode) -> *mut js_StringNo
     node
 }
 unsafe extern "C" fn jsS_insert(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut node: *mut js_StringNode,
-    mut string: *const libc::c_char,
-    mut result: *mut *const libc::c_char,
+    string: *const libc::c_char,
+    result: *mut *const libc::c_char,
 ) -> *mut js_StringNode {
     if node != &mut jsS_sentinel as *mut js_StringNode {
-        let mut c: libc::c_int = strcmp(string, ((*node).string).as_mut_ptr());
+        let c: libc::c_int = strcmp(string, ((*node).string).as_mut_ptr());
         if c < 0 as libc::c_int {
             (*node).left = jsS_insert(J, (*node).left, string, result);
         } else if c > 0 as libc::c_int {
@@ -8994,7 +8890,7 @@ unsafe extern "C" fn jsS_insert(
     }
     jsS_newstringnode(J, string, result)
 }
-unsafe extern "C" fn dumpstringnode(mut node: *mut js_StringNode, mut level: libc::c_int) {
+unsafe extern "C" fn dumpstringnode(node: *mut js_StringNode, level: libc::c_int) {
     let mut i: libc::c_int = 0;
     if (*node).left != &mut jsS_sentinel as *mut js_StringNode {
         dumpstringnode((*node).left, level + 1 as libc::c_int);
@@ -9015,15 +8911,15 @@ unsafe extern "C" fn dumpstringnode(mut node: *mut js_StringNode, mut level: lib
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsS_dumpstrings(mut J: *mut js_State) {
-    let mut root: *mut js_StringNode = (*J).strings;
+pub unsafe extern "C" fn jsS_dumpstrings(J: *mut js_State) {
+    let root: *mut js_StringNode = (*J).strings;
     printf(b"interned strings {\n\0" as *const u8 as *const libc::c_char);
     if !root.is_null() && root != &mut jsS_sentinel as *mut js_StringNode {
         dumpstringnode(root, 1 as libc::c_int);
     }
     printf(b"}\n\0" as *const u8 as *const libc::c_char);
 }
-unsafe extern "C" fn jsS_freestringnode(mut J: *mut js_State, mut node: *mut js_StringNode) {
+unsafe extern "C" fn jsS_freestringnode(J: *mut js_State, node: *mut js_StringNode) {
     if (*node).left != &mut jsS_sentinel as *mut js_StringNode {
         jsS_freestringnode(J, (*node).left);
     }
@@ -9033,15 +8929,15 @@ unsafe extern "C" fn jsS_freestringnode(mut J: *mut js_State, mut node: *mut js_
     js_free(J, node as *mut libc::c_void);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsS_freestrings(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsS_freestrings(J: *mut js_State) {
     if !((*J).strings).is_null() && (*J).strings != &mut jsS_sentinel as *mut js_StringNode {
         jsS_freestringnode(J, (*J).strings);
     }
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_intern(
-    mut J: *mut js_State,
-    mut s: *const libc::c_char,
+    J: *mut js_State,
+    s: *const libc::c_char,
 ) -> *const libc::c_char {
     let mut result: *const libc::c_char = std::ptr::null::<libc::c_char>();
     if ((*J).strings).is_null() {
@@ -9050,11 +8946,7 @@ pub unsafe extern "C" fn js_intern(
     (*J).strings = jsS_insert(J, (*J).strings, s, &mut result);
     result
 }
-unsafe extern "C" fn jsY_error(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+unsafe extern "C" fn jsY_error(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 512] = [0; 512];
     let mut msgbuf: [libc::c_char; 256] = [0; 256];
@@ -9392,7 +9284,7 @@ static mut tokenstring: [*const libc::c_char; 313] = [
     b"'with'\0" as *const u8 as *const libc::c_char,
 ];
 #[no_mangle]
-pub unsafe extern "C" fn jsY_tokenstring(mut token: libc::c_int) -> *const libc::c_char {
+pub unsafe extern "C" fn jsY_tokenstring(token: libc::c_int) -> *const libc::c_char {
     if token >= 0 as libc::c_int
         && token
             < (::core::mem::size_of::<[*const libc::c_char; 313]>() as libc::c_ulong)
@@ -9437,15 +9329,15 @@ static mut keywords: [*const libc::c_char; 29] = [
 ];
 #[no_mangle]
 pub unsafe extern "C" fn jsY_findword(
-    mut s: *const libc::c_char,
-    mut list: *mut *const libc::c_char,
-    mut num: libc::c_int,
+    s: *const libc::c_char,
+    list: *mut *const libc::c_char,
+    num: libc::c_int,
 ) -> libc::c_int {
     let mut l: libc::c_int = 0 as libc::c_int;
     let mut r: libc::c_int = num - 1 as libc::c_int;
     while l <= r {
-        let mut m: libc::c_int = (l + r) >> 1 as libc::c_int;
-        let mut c: libc::c_int = strcmp(s, *list.offset(m as isize));
+        let m: libc::c_int = (l + r) >> 1 as libc::c_int;
+        let c: libc::c_int = strcmp(s, *list.offset(m as isize));
         if c < 0 as libc::c_int {
             r = m - 1 as libc::c_int;
         } else if c > 0 as libc::c_int {
@@ -9456,11 +9348,8 @@ pub unsafe extern "C" fn jsY_findword(
     }
     -(1 as libc::c_int)
 }
-unsafe extern "C" fn jsY_findkeyword(
-    mut J: *mut js_State,
-    mut s: *const libc::c_char,
-) -> libc::c_int {
-    let mut i: libc::c_int = jsY_findword(
+unsafe extern "C" fn jsY_findkeyword(J: *mut js_State, s: *const libc::c_char) -> libc::c_int {
+    let i: libc::c_int = jsY_findword(
         s,
         keywords.as_mut_ptr(),
         (::core::mem::size_of::<[*const libc::c_char; 29]>() as libc::c_ulong)
@@ -9475,7 +9364,7 @@ unsafe extern "C" fn jsY_findkeyword(
     TK_IDENTIFIER as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_iswhite(mut c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn jsY_iswhite(c: libc::c_int) -> libc::c_int {
     (c == 0x9 as libc::c_int
         || c == 0xb as libc::c_int
         || c == 0xc as libc::c_int
@@ -9484,37 +9373,37 @@ pub unsafe extern "C" fn jsY_iswhite(mut c: libc::c_int) -> libc::c_int {
         || c == 0xfeff as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_isnewline(mut c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn jsY_isnewline(c: libc::c_int) -> libc::c_int {
     (c == 0xa as libc::c_int
         || c == 0xd as libc::c_int
         || c == 0x2028 as libc::c_int
         || c == 0x2029 as libc::c_int) as libc::c_int
 }
-unsafe extern "C" fn jsY_isidentifierstart(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn jsY_isidentifierstart(c: libc::c_int) -> libc::c_int {
     (c >= 'a' as i32 && c <= 'z' as i32
         || c >= 'A' as i32 && c <= 'Z' as i32
         || c == '$' as i32
         || c == '_' as i32
         || jsU_isalpharune(c) != 0) as libc::c_int
 }
-unsafe extern "C" fn jsY_isidentifierpart(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn jsY_isidentifierpart(c: libc::c_int) -> libc::c_int {
     (c >= '0' as i32 && c <= '9' as i32
         || (c >= 'a' as i32 && c <= 'z' as i32 || c >= 'A' as i32 && c <= 'Z' as i32)
         || c == '$' as i32
         || c == '_' as i32
         || jsU_isalpharune(c) != 0) as libc::c_int
 }
-unsafe extern "C" fn jsY_isdec(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn jsY_isdec(c: libc::c_int) -> libc::c_int {
     (c >= '0' as i32 && c <= '9' as i32) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_ishex(mut c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn jsY_ishex(c: libc::c_int) -> libc::c_int {
     (c >= '0' as i32 && c <= '9' as i32
         || (c >= 'a' as i32 && c <= 'f' as i32 || c >= 'A' as i32 && c <= 'F' as i32))
         as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_tohex(mut c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn jsY_tohex(c: libc::c_int) -> libc::c_int {
     if c >= '0' as i32 && c <= '9' as i32 {
         return c - '0' as i32;
     }
@@ -9526,7 +9415,7 @@ pub unsafe extern "C" fn jsY_tohex(mut c: libc::c_int) -> libc::c_int {
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn jsY_next(mut J: *mut js_State) {
+unsafe extern "C" fn jsY_next(J: *mut js_State) {
     let mut c: Rune = 0;
     if *(*J).source as libc::c_int == 0 as libc::c_int {
         (*J).lexchar = -(1 as libc::c_int);
@@ -9544,7 +9433,7 @@ unsafe extern "C" fn jsY_next(mut J: *mut js_State) {
     }
     (*J).lexchar = c;
 }
-unsafe extern "C" fn jsY_unescape(mut J: *mut js_State) {
+unsafe extern "C" fn jsY_unescape(J: *mut js_State) {
     if if (*J).lexchar == '\\' as i32 {
         jsY_next(J);
         1 as libc::c_int
@@ -9584,14 +9473,14 @@ unsafe extern "C" fn jsY_unescape(mut J: *mut js_State) {
         );
     }
 }
-unsafe extern "C" fn textinit(mut J: *mut js_State) {
+unsafe extern "C" fn textinit(J: *mut js_State) {
     if ((*J).lexbuf.text).is_null() {
         (*J).lexbuf.cap = 4096 as libc::c_int;
         (*J).lexbuf.text = js_malloc(J, (*J).lexbuf.cap) as *mut libc::c_char;
     }
     (*J).lexbuf.len = 0 as libc::c_int;
 }
-unsafe extern "C" fn textpush(mut J: *mut js_State, mut c: Rune) {
+unsafe extern "C" fn textpush(J: *mut js_State, mut c: Rune) {
     let mut n: libc::c_int = 0;
     if c == -(1 as libc::c_int) {
         n = 1 as libc::c_int;
@@ -9612,16 +9501,16 @@ unsafe extern "C" fn textpush(mut J: *mut js_State, mut c: Rune) {
             jsU_runetochar(((*J).lexbuf.text).offset((*J).lexbuf.len as isize), &mut c);
     };
 }
-unsafe extern "C" fn textend(mut J: *mut js_State) -> *mut libc::c_char {
+unsafe extern "C" fn textend(J: *mut js_State) -> *mut libc::c_char {
     textpush(J, -(1 as libc::c_int));
     (*J).lexbuf.text
 }
-unsafe extern "C" fn lexlinecomment(mut J: *mut js_State) {
+unsafe extern "C" fn lexlinecomment(J: *mut js_State) {
     while (*J).lexchar != -(1 as libc::c_int) && (*J).lexchar != '\n' as i32 {
         jsY_next(J);
     }
 }
-unsafe extern "C" fn lexcomment(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexcomment(J: *mut js_State) -> libc::c_int {
     while (*J).lexchar != -(1 as libc::c_int) {
         if if (*J).lexchar == '*' as i32 {
             jsY_next(J);
@@ -9648,7 +9537,7 @@ unsafe extern "C" fn lexcomment(mut J: *mut js_State) -> libc::c_int {
     }
     -(1 as libc::c_int)
 }
-unsafe extern "C" fn lexhex(mut J: *mut js_State) -> libc::c_double {
+unsafe extern "C" fn lexhex(J: *mut js_State) -> libc::c_double {
     let mut n: libc::c_double = 0 as libc::c_int as libc::c_double;
     if jsY_ishex((*J).lexchar) == 0 {
         jsY_error(
@@ -9662,8 +9551,8 @@ unsafe extern "C" fn lexhex(mut J: *mut js_State) -> libc::c_double {
     }
     n
 }
-unsafe extern "C" fn lexnumber(mut J: *mut js_State) -> libc::c_int {
-    let mut s: *const libc::c_char = ((*J).source).offset(-(1 as libc::c_int as isize));
+unsafe extern "C" fn lexnumber(J: *mut js_State) -> libc::c_int {
+    let s: *const libc::c_char = ((*J).source).offset(-(1 as libc::c_int as isize));
     if if (*J).lexchar == '0' as i32 {
         jsY_next(J);
         1 as libc::c_int
@@ -9766,7 +9655,7 @@ unsafe extern "C" fn lexnumber(mut J: *mut js_State) -> libc::c_int {
     (*J).number = js_strtod(s, std::ptr::null_mut::<*mut libc::c_char>());
     TK_NUMBER as libc::c_int
 }
-unsafe extern "C" fn lexescape(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexescape(J: *mut js_State) -> libc::c_int {
     let mut x: libc::c_int = 0 as libc::c_int;
     if if (*J).lexchar == '\n' as i32 {
         jsY_next(J);
@@ -9875,9 +9764,9 @@ unsafe extern "C" fn lexescape(mut J: *mut js_State) -> libc::c_int {
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn lexstring(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexstring(J: *mut js_State) -> libc::c_int {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
-    let mut q: libc::c_int = (*J).lexchar;
+    let q: libc::c_int = (*J).lexchar;
     jsY_next(J);
     textinit(J);
     while (*J).lexchar != q {
@@ -9918,13 +9807,13 @@ unsafe extern "C" fn lexstring(mut J: *mut js_State) -> libc::c_int {
     (*J).text = js_intern(J, s);
     TK_STRING as libc::c_int
 }
-unsafe extern "C" fn isregexpcontext(mut last: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn isregexpcontext(last: libc::c_int) -> libc::c_int {
     match last {
         93 | 41 | 125 | 256 | 257 | 258 | 293 | 301 | 304 | 306 => 0 as libc::c_int,
         _ => 1 as libc::c_int,
     }
 }
-unsafe extern "C" fn lexregexp(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexregexp(J: *mut js_State) -> libc::c_int {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut g: libc::c_int = 0;
     let mut m: libc::c_int = 0;
@@ -10046,13 +9935,13 @@ unsafe extern "C" fn lexregexp(mut J: *mut js_State) -> libc::c_int {
     }
     TK_REGEXP as libc::c_int
 }
-unsafe extern "C" fn isnlthcontext(mut last: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn isnlthcontext(last: libc::c_int) -> libc::c_int {
     match last {
         284 | 287 | 302 | 305 => 1 as libc::c_int,
         _ => 0 as libc::c_int,
     }
 }
-unsafe extern "C" fn jsY_lexx(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn jsY_lexx(J: *mut js_State) -> libc::c_int {
     (*J).newline = 0 as libc::c_int;
     loop {
         (*J).lexline = (*J).line;
@@ -10447,9 +10336,9 @@ unsafe extern "C" fn jsY_lexx(mut J: *mut js_State) -> libc::c_int {
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsY_initlex(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
 ) {
     (*J).filename = filename;
     (*J).source = source;
@@ -10458,12 +10347,12 @@ pub unsafe extern "C" fn jsY_initlex(
     jsY_next(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_lex(mut J: *mut js_State) -> libc::c_int {
+pub unsafe extern "C" fn jsY_lex(J: *mut js_State) -> libc::c_int {
     (*J).lasttoken = jsY_lexx(J);
     (*J).lasttoken
 }
-unsafe extern "C" fn lexjsonnumber(mut J: *mut js_State) -> libc::c_int {
-    let mut s: *const libc::c_char = ((*J).source).offset(-(1 as libc::c_int as isize));
+unsafe extern "C" fn lexjsonnumber(J: *mut js_State) -> libc::c_int {
+    let s: *const libc::c_char = ((*J).source).offset(-(1 as libc::c_int as isize));
     if (*J).lexchar == '-' as i32 {
         jsY_next(J);
     }
@@ -10527,7 +10416,7 @@ unsafe extern "C" fn lexjsonnumber(mut J: *mut js_State) -> libc::c_int {
     (*J).number = js_strtod(s, std::ptr::null_mut::<*mut libc::c_char>());
     TK_NUMBER as libc::c_int
 }
-unsafe extern "C" fn lexjsonescape(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexjsonescape(J: *mut js_State) -> libc::c_int {
     let mut x: libc::c_int = 0 as libc::c_int;
     match (*J).lexchar {
         117 => {
@@ -10599,7 +10488,7 @@ unsafe extern "C" fn lexjsonescape(mut J: *mut js_State) -> libc::c_int {
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn lexjsonstring(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn lexjsonstring(J: *mut js_State) -> libc::c_int {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     textinit(J);
     while (*J).lexchar != '"' as i32 {
@@ -10644,7 +10533,7 @@ unsafe extern "C" fn lexjsonstring(mut J: *mut js_State) -> libc::c_int {
     TK_STRING as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsY_lexjson(mut J: *mut js_State) -> libc::c_int {
+pub unsafe extern "C" fn jsY_lexjson(J: *mut js_State) -> libc::c_int {
     (*J).lexline = (*J).line;
     while jsY_iswhite((*J).lexchar) != 0 || (*J).lexchar == '\n' as i32 {
         jsY_next(J);
@@ -10839,7 +10728,7 @@ pub unsafe extern "C" fn jsY_lexjson(mut J: *mut js_State) -> libc::c_int {
         (*J).lexchar,
     );
 }
-unsafe extern "C" fn jsM_round(mut x: libc::c_double) -> libc::c_double {
+unsafe extern "C" fn jsM_round(x: libc::c_double) -> libc::c_double {
     if x.is_nan() as i32 != 0 {
         return x;
     }
@@ -10866,48 +10755,48 @@ unsafe extern "C" fn jsM_round(mut x: libc::c_double) -> libc::c_double {
     }
     floor(x + 0.5f64)
 }
-unsafe extern "C" fn Math_abs(mut J: *mut js_State) {
+unsafe extern "C" fn Math_abs(J: *mut js_State) {
     js_pushnumber(J, fabs(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_acos(mut J: *mut js_State) {
+unsafe extern "C" fn Math_acos(J: *mut js_State) {
     js_pushnumber(J, acos(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_asin(mut J: *mut js_State) {
+unsafe extern "C" fn Math_asin(J: *mut js_State) {
     js_pushnumber(J, asin(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_atan(mut J: *mut js_State) {
+unsafe extern "C" fn Math_atan(J: *mut js_State) {
     js_pushnumber(J, atan(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_atan2(mut J: *mut js_State) {
-    let mut y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut x: libc::c_double = js_tonumber(J, 2 as libc::c_int);
+unsafe extern "C" fn Math_atan2(J: *mut js_State) {
+    let y: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let x: libc::c_double = js_tonumber(J, 2 as libc::c_int);
     js_pushnumber(J, atan2(y, x));
 }
-unsafe extern "C" fn Math_ceil(mut J: *mut js_State) {
+unsafe extern "C" fn Math_ceil(J: *mut js_State) {
     js_pushnumber(J, ceil(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_cos(mut J: *mut js_State) {
+unsafe extern "C" fn Math_cos(J: *mut js_State) {
     js_pushnumber(J, cos(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_exp(mut J: *mut js_State) {
+unsafe extern "C" fn Math_exp(J: *mut js_State) {
     js_pushnumber(J, exp(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_floor(mut J: *mut js_State) {
+unsafe extern "C" fn Math_floor(J: *mut js_State) {
     js_pushnumber(J, floor(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_log(mut J: *mut js_State) {
+unsafe extern "C" fn Math_log(J: *mut js_State) {
     js_pushnumber(J, log(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_pow(mut J: *mut js_State) {
-    let mut x: libc::c_double = js_tonumber(J, 1 as libc::c_int);
-    let mut y: libc::c_double = js_tonumber(J, 2 as libc::c_int);
+unsafe extern "C" fn Math_pow(J: *mut js_State) {
+    let x: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+    let y: libc::c_double = js_tonumber(J, 2 as libc::c_int);
     if y.is_finite() as i32 == 0 && fabs(x) == 1 as libc::c_int as libc::c_double {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     } else {
         js_pushnumber(J, pow(x, y));
     };
 }
-unsafe extern "C" fn Math_random(mut J: *mut js_State) {
+unsafe extern "C" fn Math_random(J: *mut js_State) {
     (*J).seed = ((*J).seed as uint64_t)
         .wrapping_mul(48271 as libc::c_int as libc::c_ulong)
         .wrapping_rem(0x7fffffff as libc::c_int as libc::c_ulong) as libc::c_uint;
@@ -10916,7 +10805,7 @@ unsafe extern "C" fn Math_random(mut J: *mut js_State) {
         (*J).seed as libc::c_double / 0x7fffffff as libc::c_int as libc::c_double,
     );
 }
-unsafe extern "C" fn Math_init_random(mut J: *mut js_State) {
+unsafe extern "C" fn Math_init_random(J: *mut js_State) {
     (*J).seed =
         (time(std::ptr::null_mut::<time_t>()) + 123 as libc::c_int as libc::c_long) as libc::c_uint;
     (*J).seed ^= (*J).seed << 13 as libc::c_int;
@@ -10924,26 +10813,26 @@ unsafe extern "C" fn Math_init_random(mut J: *mut js_State) {
     (*J).seed ^= (*J).seed << 5 as libc::c_int;
     (*J).seed = ((*J).seed).wrapping_rem(0x7fffffff as libc::c_int as libc::c_uint);
 }
-unsafe extern "C" fn Math_round(mut J: *mut js_State) {
-    let mut x: libc::c_double = js_tonumber(J, 1 as libc::c_int);
+unsafe extern "C" fn Math_round(J: *mut js_State) {
+    let x: libc::c_double = js_tonumber(J, 1 as libc::c_int);
     js_pushnumber(J, jsM_round(x));
 }
-unsafe extern "C" fn Math_sin(mut J: *mut js_State) {
+unsafe extern "C" fn Math_sin(J: *mut js_State) {
     js_pushnumber(J, sin(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_sqrt(mut J: *mut js_State) {
+unsafe extern "C" fn Math_sqrt(J: *mut js_State) {
     js_pushnumber(J, sqrt(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_tan(mut J: *mut js_State) {
+unsafe extern "C" fn Math_tan(J: *mut js_State) {
     js_pushnumber(J, tan(js_tonumber(J, 1 as libc::c_int)));
 }
-unsafe extern "C" fn Math_max(mut J: *mut js_State) {
+unsafe extern "C" fn Math_max(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut n: libc::c_int = js_gettop(J);
+    let n: libc::c_int = js_gettop(J);
     let mut x: libc::c_double = -::core::f32::INFINITY as libc::c_double;
     i = 1 as libc::c_int;
     while i < n {
-        let mut y: libc::c_double = js_tonumber(J, i);
+        let y: libc::c_double = js_tonumber(J, i);
         if y.is_nan() as i32 != 0 {
             x = y;
             break;
@@ -10959,13 +10848,13 @@ unsafe extern "C" fn Math_max(mut J: *mut js_State) {
     }
     js_pushnumber(J, x);
 }
-unsafe extern "C" fn Math_min(mut J: *mut js_State) {
+unsafe extern "C" fn Math_min(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut n: libc::c_int = js_gettop(J);
+    let n: libc::c_int = js_gettop(J);
     let mut x: libc::c_double = ::core::f32::INFINITY as libc::c_double;
     i = 1 as libc::c_int;
     while i < n {
-        let mut y: libc::c_double = js_tonumber(J, i);
+        let y: libc::c_double = js_tonumber(J, i);
         if y.is_nan() as i32 != 0 {
             x = y;
             break;
@@ -10982,7 +10871,7 @@ unsafe extern "C" fn Math_min(mut J: *mut js_State) {
     js_pushnumber(J, x);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initmath(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initmath(J: *mut js_State) {
     Math_init_random(J);
     js_pushobject(J, jsV_newobject(J, JS_CMATH, (*J).Object_prototype));
     jsB_propn(
@@ -11139,7 +11028,7 @@ pub unsafe extern "C" fn jsB_initmath(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsB_new_Number(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_Number(J: *mut js_State) {
     js_newnumber(
         J,
         if js_gettop(J) > 1 as libc::c_int {
@@ -11149,7 +11038,7 @@ unsafe extern "C" fn jsB_new_Number(mut J: *mut js_State) {
         },
     );
 }
-unsafe extern "C" fn jsB_Number(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Number(J: *mut js_State) {
     js_pushnumber(
         J,
         if js_gettop(J) > 1 as libc::c_int {
@@ -11159,17 +11048,17 @@ unsafe extern "C" fn jsB_Number(mut J: *mut js_State) {
         },
     );
 }
-unsafe extern "C" fn Np_valueOf(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Np_valueOf(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if (*self_0).type_0 as libc::c_uint != JS_CNUMBER as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a number\0" as *const u8 as *const libc::c_char);
     }
     js_pushnumber(J, (*self_0).u.number);
 }
-unsafe extern "C" fn Np_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Np_toString(J: *mut js_State) {
     let mut buf: [libc::c_char; 100] = [0; 100];
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut radix: libc::c_int = if js_isundefined(J, 1 as libc::c_int) != 0 {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let radix: libc::c_int = if js_isundefined(J, 1 as libc::c_int) != 0 {
         10 as libc::c_int
     } else {
         js_tointeger(J, 1 as libc::c_int)
@@ -11192,10 +11081,10 @@ unsafe extern "C" fn Np_toString(mut J: *mut js_State) {
         )
     };
     let mut number: libc::c_double = x;
-    let mut sign: libc::c_int = (x < 0 as libc::c_int as libc::c_double) as libc::c_int;
+    let sign: libc::c_int = (x < 0 as libc::c_int as libc::c_double) as libc::c_int;
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
     let mut u: uint64_t = 0;
-    let mut limit: uint64_t = (1 as libc::c_int as uint64_t) << 52 as libc::c_int;
+    let limit: uint64_t = (1 as libc::c_int as uint64_t) << 52 as libc::c_int;
     let mut ndigits: libc::c_int = 0;
     let mut exp_0: libc::c_int = 0;
     let mut point: libc::c_int = 0;
@@ -11315,24 +11204,24 @@ unsafe extern "C" fn Np_toString(mut J: *mut js_State) {
     js_free(J, sb as *mut libc::c_void);
 }
 unsafe extern "C" fn numtostr(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut w: libc::c_int,
-    mut n: libc::c_double,
+    J: *mut js_State,
+    fmt: *const libc::c_char,
+    w: libc::c_int,
+    n: libc::c_double,
 ) {
     let mut buf: [libc::c_char; 50] = [0; 50];
     let mut e: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     sprintf(buf.as_mut_ptr(), fmt, w, n);
     e = strchr(buf.as_mut_ptr(), 'e' as i32);
     if !e.is_null() {
-        let mut exp_0: libc::c_int = atoi(e.offset(1 as libc::c_int as isize));
+        let exp_0: libc::c_int = atoi(e.offset(1 as libc::c_int as isize));
         sprintf(e, b"e%+d\0" as *const u8 as *const libc::c_char, exp_0);
     }
     js_pushstring(J, buf.as_mut_ptr());
 }
-unsafe extern "C" fn Np_toFixed(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
+unsafe extern "C" fn Np_toFixed(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut x: libc::c_double = 0.;
     if (*self_0).type_0 as libc::c_uint != JS_CNUMBER as libc::c_int as libc::c_uint {
@@ -11371,9 +11260,9 @@ unsafe extern "C" fn Np_toFixed(mut J: *mut js_State) {
         numtostr(J, b"%.*f\0" as *const u8 as *const libc::c_char, width, x);
     };
 }
-unsafe extern "C" fn Np_toExponential(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
+unsafe extern "C" fn Np_toExponential(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut x: libc::c_double = 0.;
     if (*self_0).type_0 as libc::c_uint != JS_CNUMBER as libc::c_int as libc::c_uint {
@@ -11410,9 +11299,9 @@ unsafe extern "C" fn Np_toExponential(mut J: *mut js_State) {
         numtostr(J, b"%.*e\0" as *const u8 as *const libc::c_char, width, x);
     };
 }
-unsafe extern "C" fn Np_toPrecision(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
+unsafe extern "C" fn Np_toPrecision(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let width: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut x: libc::c_double = 0.;
     if (*self_0).type_0 as libc::c_uint != JS_CNUMBER as libc::c_int as libc::c_uint {
@@ -11450,7 +11339,7 @@ unsafe extern "C" fn Np_toPrecision(mut J: *mut js_State) {
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initnumber(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initnumber(J: *mut js_State) {
     (*(*J).Number_prototype).u.number = 0 as libc::c_int as libc::c_double;
     js_pushobject(J, (*J).Number_prototype);
     jsB_propf(
@@ -11527,21 +11416,21 @@ pub unsafe extern "C" fn jsB_initnumber(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsB_new_Object(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_Object(J: *mut js_State) {
     if js_isundefined(J, 1 as libc::c_int) != 0 || js_isnull(J, 1 as libc::c_int) != 0 {
         js_newobject(J);
     } else {
         js_pushobject(J, js_toobject(J, 1 as libc::c_int));
     };
 }
-unsafe extern "C" fn jsB_Object(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_Object(J: *mut js_State) {
     if js_isundefined(J, 1 as libc::c_int) != 0 || js_isnull(J, 1 as libc::c_int) != 0 {
         js_newobject(J);
     } else {
         js_pushobject(J, js_toobject(J, 1 as libc::c_int));
     };
 }
-unsafe extern "C" fn Op_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Op_toString(J: *mut js_State) {
     if js_isundefined(J, 0 as libc::c_int) != 0 {
         js_pushliteral(
             J,
@@ -11550,7 +11439,7 @@ unsafe extern "C" fn Op_toString(mut J: *mut js_State) {
     } else if js_isnull(J, 0 as libc::c_int) != 0 {
         js_pushliteral(J, b"[object Null]\0" as *const u8 as *const libc::c_char);
     } else {
-        let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+        let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
         match (*self_0).type_0 as libc::c_uint {
             0 => {
                 js_pushliteral(J, b"[object Object]\0" as *const u8 as *const libc::c_char);
@@ -11623,12 +11512,12 @@ unsafe extern "C" fn Op_toString(mut J: *mut js_State) {
         }
     };
 }
-unsafe extern "C" fn Op_valueOf(mut J: *mut js_State) {
+unsafe extern "C" fn Op_valueOf(J: *mut js_State) {
     js_copy(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Op_hasOwnProperty(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut name: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+unsafe extern "C" fn Op_hasOwnProperty(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let name: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut k: libc::c_int = 0;
     if (*self_0).type_0 as libc::c_uint == JS_CSTRING as libc::c_int as libc::c_uint
@@ -11654,8 +11543,8 @@ unsafe extern "C" fn Op_hasOwnProperty(mut J: *mut js_State) {
         (ref_0 != std::ptr::null_mut::<libc::c_void>() as *mut js_Property) as libc::c_int,
     );
 }
-unsafe extern "C" fn Op_isPrototypeOf(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Op_isPrototypeOf(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if js_isobject(J, 1 as libc::c_int) != 0 {
         let mut V: *mut js_Object = js_toobject(J, 1 as libc::c_int);
         loop {
@@ -11671,16 +11560,16 @@ unsafe extern "C" fn Op_isPrototypeOf(mut J: *mut js_State) {
     }
     js_pushboolean(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn Op_propertyIsEnumerable(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
-    let mut name: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
-    let mut ref_0: *mut js_Property = jsV_getownproperty(J, self_0, name);
+unsafe extern "C" fn Op_propertyIsEnumerable(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+    let name: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+    let ref_0: *mut js_Property = jsV_getownproperty(J, self_0, name);
     js_pushboolean(
         J,
         (!ref_0.is_null() && (*ref_0).atts & JS_DONTENUM as libc::c_int == 0) as libc::c_int,
     );
 }
-unsafe extern "C" fn O_getPrototypeOf(mut J: *mut js_State) {
+unsafe extern "C" fn O_getPrototypeOf(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -11692,7 +11581,7 @@ unsafe extern "C" fn O_getPrototypeOf(mut J: *mut js_State) {
         js_pushnull(J);
     };
 }
-unsafe extern "C" fn O_getOwnPropertyDescriptor(mut J: *mut js_State) {
+unsafe extern "C" fn O_getOwnPropertyDescriptor(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
@@ -11769,8 +11658,8 @@ unsafe extern "C" fn O_getOwnPropertyDescriptor(mut J: *mut js_State) {
     };
 }
 unsafe extern "C" fn O_getOwnPropertyNames_walk(
-    mut J: *mut js_State,
-    mut ref_0: *mut js_Property,
+    J: *mut js_State,
+    ref_0: *mut js_Property,
     mut i: libc::c_int,
 ) -> libc::c_int {
     if (*(*ref_0).left).level != 0 {
@@ -11785,7 +11674,7 @@ unsafe extern "C" fn O_getOwnPropertyNames_walk(
     }
     i
 }
-unsafe extern "C" fn O_getOwnPropertyNames(mut J: *mut js_State) {
+unsafe extern "C" fn O_getOwnPropertyNames(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut name: [libc::c_char; 32] = [0; 32];
     let mut k: libc::c_int = 0;
@@ -11858,10 +11747,10 @@ unsafe extern "C" fn O_getOwnPropertyNames(mut J: *mut js_State) {
     }
 }
 unsafe extern "C" fn ToPropertyDescriptor(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
-    mut desc: *mut js_Object,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
+    desc: *mut js_Object,
 ) {
     let mut haswritable: libc::c_int = 0 as libc::c_int;
     let mut hasvalue: libc::c_int = 0 as libc::c_int;
@@ -11952,7 +11841,7 @@ unsafe extern "C" fn ToPropertyDescriptor(
     js_defaccessor(J, -(4 as libc::c_int), name, atts);
     js_pop(J, 2 as libc::c_int);
 }
-unsafe extern "C" fn O_defineProperty(mut J: *mut js_State) {
+unsafe extern "C" fn O_defineProperty(J: *mut js_State) {
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
     }
@@ -11967,7 +11856,7 @@ unsafe extern "C" fn O_defineProperty(mut J: *mut js_State) {
     );
     js_copy(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn O_defineProperties_walk(mut J: *mut js_State, mut ref_0: *mut js_Property) {
+unsafe extern "C" fn O_defineProperties_walk(J: *mut js_State, ref_0: *mut js_Property) {
     if (*(*ref_0).left).level != 0 {
         O_defineProperties_walk(J, (*ref_0).left);
     }
@@ -11985,7 +11874,7 @@ unsafe extern "C" fn O_defineProperties_walk(mut J: *mut js_State, mut ref_0: *m
         O_defineProperties_walk(J, (*ref_0).right);
     }
 }
-unsafe extern "C" fn O_defineProperties(mut J: *mut js_State) {
+unsafe extern "C" fn O_defineProperties(J: *mut js_State) {
     let mut props: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -11999,11 +11888,7 @@ unsafe extern "C" fn O_defineProperties(mut J: *mut js_State) {
     }
     js_copy(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn O_create_walk(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut ref_0: *mut js_Property,
-) {
+unsafe extern "C" fn O_create_walk(J: *mut js_State, obj: *mut js_Object, ref_0: *mut js_Property) {
     if (*(*ref_0).left).level != 0 {
         O_create_walk(J, obj, (*ref_0).left);
     }
@@ -12022,7 +11907,7 @@ unsafe extern "C" fn O_create_walk(
         O_create_walk(J, obj, (*ref_0).right);
     }
 }
-unsafe extern "C" fn O_create(mut J: *mut js_State) {
+unsafe extern "C" fn O_create(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut proto: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut props: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -12049,8 +11934,8 @@ unsafe extern "C" fn O_create(mut J: *mut js_State) {
     }
 }
 unsafe extern "C" fn O_keys_walk(
-    mut J: *mut js_State,
-    mut ref_0: *mut js_Property,
+    J: *mut js_State,
+    ref_0: *mut js_Property,
     mut i: libc::c_int,
 ) -> libc::c_int {
     if (*(*ref_0).left).level != 0 {
@@ -12067,7 +11952,7 @@ unsafe extern "C" fn O_keys_walk(
     }
     i
 }
-unsafe extern "C" fn O_keys(mut J: *mut js_State) {
+unsafe extern "C" fn O_keys(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut name: [libc::c_char; 32] = [0; 32];
     let mut i: libc::c_int = 0;
@@ -12109,7 +11994,7 @@ unsafe extern "C" fn O_keys(mut J: *mut js_State) {
         }
     }
 }
-unsafe extern "C" fn O_preventExtensions(mut J: *mut js_State) {
+unsafe extern "C" fn O_preventExtensions(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -12119,13 +12004,13 @@ unsafe extern "C" fn O_preventExtensions(mut J: *mut js_State) {
     (*obj).extensible = 0 as libc::c_int;
     js_copy(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn O_isExtensible(mut J: *mut js_State) {
+unsafe extern "C" fn O_isExtensible(J: *mut js_State) {
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
     }
     js_pushboolean(J, (*js_toobject(J, 1 as libc::c_int)).extensible);
 }
-unsafe extern "C" fn O_seal_walk(mut J: *mut js_State, mut ref_0: *mut js_Property) {
+unsafe extern "C" fn O_seal_walk(J: *mut js_State, ref_0: *mut js_Property) {
     if (*(*ref_0).left).level != 0 {
         O_seal_walk(J, (*ref_0).left);
     }
@@ -12134,7 +12019,7 @@ unsafe extern "C" fn O_seal_walk(mut J: *mut js_State, mut ref_0: *mut js_Proper
         O_seal_walk(J, (*ref_0).right);
     }
 }
-unsafe extern "C" fn O_seal(mut J: *mut js_State) {
+unsafe extern "C" fn O_seal(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -12147,10 +12032,7 @@ unsafe extern "C" fn O_seal(mut J: *mut js_State) {
     }
     js_copy(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn O_isSealed_walk(
-    mut J: *mut js_State,
-    mut ref_0: *mut js_Property,
-) -> libc::c_int {
+unsafe extern "C" fn O_isSealed_walk(J: *mut js_State, ref_0: *mut js_Property) -> libc::c_int {
     if (*(*ref_0).left).level != 0 && O_isSealed_walk(J, (*ref_0).left) == 0 {
         return 0 as libc::c_int;
     }
@@ -12162,7 +12044,7 @@ unsafe extern "C" fn O_isSealed_walk(
     }
     1 as libc::c_int
 }
-unsafe extern "C" fn O_isSealed(mut J: *mut js_State) {
+unsafe extern "C" fn O_isSealed(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -12178,7 +12060,7 @@ unsafe extern "C" fn O_isSealed(mut J: *mut js_State) {
         js_pushboolean(J, 1 as libc::c_int);
     };
 }
-unsafe extern "C" fn O_freeze_walk(mut J: *mut js_State, mut ref_0: *mut js_Property) {
+unsafe extern "C" fn O_freeze_walk(J: *mut js_State, ref_0: *mut js_Property) {
     if (*(*ref_0).left).level != 0 {
         O_freeze_walk(J, (*ref_0).left);
     }
@@ -12187,7 +12069,7 @@ unsafe extern "C" fn O_freeze_walk(mut J: *mut js_State, mut ref_0: *mut js_Prop
         O_freeze_walk(J, (*ref_0).right);
     }
 }
-unsafe extern "C" fn O_freeze(mut J: *mut js_State) {
+unsafe extern "C" fn O_freeze(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -12200,10 +12082,7 @@ unsafe extern "C" fn O_freeze(mut J: *mut js_State) {
     }
     js_copy(J, 1 as libc::c_int);
 }
-unsafe extern "C" fn O_isFrozen_walk(
-    mut J: *mut js_State,
-    mut ref_0: *mut js_Property,
-) -> libc::c_int {
+unsafe extern "C" fn O_isFrozen_walk(J: *mut js_State, ref_0: *mut js_Property) -> libc::c_int {
     if (*(*ref_0).left).level != 0 && O_isFrozen_walk(J, (*ref_0).left) == 0 {
         return 0 as libc::c_int;
     }
@@ -12218,7 +12097,7 @@ unsafe extern "C" fn O_isFrozen_walk(
     }
     1 as libc::c_int
 }
-unsafe extern "C" fn O_isFrozen(mut J: *mut js_State) {
+unsafe extern "C" fn O_isFrozen(J: *mut js_State) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, 1 as libc::c_int) == 0 {
         js_typeerror(J, b"not an object\0" as *const u8 as *const libc::c_char);
@@ -12231,7 +12110,7 @@ unsafe extern "C" fn O_isFrozen(mut J: *mut js_State) {
     js_pushboolean(J, ((*obj).extensible == 0) as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initobject(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initobject(J: *mut js_State) {
     js_pushobject(J, (*J).Object_prototype);
     jsB_propf(
         J,
@@ -12361,52 +12240,40 @@ pub unsafe extern "C" fn jsB_initobject(mut J: *mut js_State) {
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isnumberobject(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_isnumberobject(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     (js_isobject(J, idx) != 0
         && (*js_toobject(J, idx)).type_0 as libc::c_uint
             == JS_CNUMBER as libc::c_int as libc::c_uint) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isstringobject(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_isstringobject(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     (js_isobject(J, idx) != 0
         && (*js_toobject(J, idx)).type_0 as libc::c_uint
             == JS_CSTRING as libc::c_int as libc::c_uint) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isbooleanobject(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_isbooleanobject(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     (js_isobject(J, idx) != 0
         && (*js_toobject(J, idx)).type_0 as libc::c_uint
             == JS_CBOOLEAN as libc::c_int as libc::c_uint) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isdateobject(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_isdateobject(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     (js_isobject(J, idx) != 0
         && (*js_toobject(J, idx)).type_0 as libc::c_uint == JS_CDATE as libc::c_int as libc::c_uint)
         as libc::c_int
 }
-unsafe extern "C" fn jsonnext(mut J: *mut js_State) {
+unsafe extern "C" fn jsonnext(J: *mut js_State) {
     (*J).lookahead = jsY_lexjson(J);
 }
-unsafe extern "C" fn jsonaccept(mut J: *mut js_State, mut t: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn jsonaccept(J: *mut js_State, t: libc::c_int) -> libc::c_int {
     if (*J).lookahead == t {
         jsonnext(J);
         return 1 as libc::c_int;
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn jsonexpect(mut J: *mut js_State, mut t: libc::c_int) {
+unsafe extern "C" fn jsonexpect(J: *mut js_State, t: libc::c_int) {
     if jsonaccept(J, t) == 0 {
         js_syntaxerror(
             J,
@@ -12416,7 +12283,7 @@ unsafe extern "C" fn jsonexpect(mut J: *mut js_State, mut t: libc::c_int) {
         );
     }
 }
-unsafe extern "C" fn jsonvalue(mut J: *mut js_State) {
+unsafe extern "C" fn jsonvalue(J: *mut js_State) {
     let mut i: libc::c_int = 0;
     let mut name: *const libc::c_char = std::ptr::null::<libc::c_char>();
     match (*J).lookahead {
@@ -12493,14 +12360,14 @@ unsafe extern "C" fn jsonvalue(mut J: *mut js_State) {
         }
     };
 }
-unsafe extern "C" fn jsonrevive(mut J: *mut js_State, mut name: *const libc::c_char) {
+unsafe extern "C" fn jsonrevive(J: *mut js_State, name: *const libc::c_char) {
     let mut key: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut buf: [libc::c_char; 32] = [0; 32];
     js_getproperty(J, -(1 as libc::c_int), name);
     if js_isobject(J, -(1 as libc::c_int)) != 0 {
         if js_isarray(J, -(1 as libc::c_int)) != 0 {
             let mut i: libc::c_int = 0 as libc::c_int;
-            let mut n: libc::c_int = js_getlength(J, -(1 as libc::c_int));
+            let n: libc::c_int = js_getlength(J, -(1 as libc::c_int));
             i = 0 as libc::c_int;
             while i < n {
                 jsonrevive(J, js_itoa(buf.as_mut_ptr(), i));
@@ -12540,8 +12407,8 @@ unsafe extern "C" fn jsonrevive(mut J: *mut js_State, mut name: *const libc::c_c
     js_call(J, 2 as libc::c_int);
     js_rot2pop1(J);
 }
-unsafe extern "C" fn JSON_parse(mut J: *mut js_State) {
-    let mut source: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+unsafe extern "C" fn JSON_parse(J: *mut js_State) {
+    let source: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
     jsY_initlex(J, b"JSON\0" as *const u8 as *const libc::c_char, source);
     jsonnext(J);
     if js_iscallable(J, 2 as libc::c_int) != 0 {
@@ -12558,11 +12425,7 @@ unsafe extern "C" fn JSON_parse(mut J: *mut js_State) {
         jsonvalue(J);
     };
 }
-unsafe extern "C" fn fmtnum(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut n: libc::c_double,
-) {
+unsafe extern "C" fn fmtnum(J: *mut js_State, sb: *mut *mut js_Buffer, n: libc::c_double) {
     if n.is_nan() as i32 != 0 {
         js_puts(J, sb, b"null\0" as *const u8 as *const libc::c_char);
     } else if if n.is_infinite() {
@@ -12583,11 +12446,7 @@ unsafe extern "C" fn fmtnum(
         js_puts(J, sb, jsV_numbertostring(J, buf.as_mut_ptr(), n));
     };
 }
-unsafe extern "C" fn fmtstr(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut s: *const libc::c_char,
-) {
+unsafe extern "C" fn fmtstr(J: *mut js_State, sb: *mut *mut js_Buffer, mut s: *const libc::c_char) {
     static mut HEX: *const libc::c_char = b"0123456789abcdef\0" as *const u8 as *const libc::c_char;
     let mut i: libc::c_int = 0;
     let mut n: libc::c_int = 0;
@@ -12661,9 +12520,9 @@ unsafe extern "C" fn fmtstr(
     js_putc(J, sb, '"' as i32);
 }
 unsafe extern "C" fn fmtindent(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut gap: *const libc::c_char,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
+    gap: *const libc::c_char,
     mut level: libc::c_int,
 ) {
     js_putc(J, sb, '\n' as i32);
@@ -12676,7 +12535,7 @@ unsafe extern "C" fn fmtindent(
         js_puts(J, sb, gap);
     }
 }
-unsafe extern "C" fn filterprop(mut J: *mut js_State, mut key: *const libc::c_char) -> libc::c_int {
+unsafe extern "C" fn filterprop(J: *mut js_State, key: *const libc::c_char) -> libc::c_int {
     let mut i: libc::c_int = 0;
     let mut n: libc::c_int = 0;
     let mut found: libc::c_int = 0;
@@ -12702,11 +12561,11 @@ unsafe extern "C" fn filterprop(mut J: *mut js_State, mut key: *const libc::c_ch
     1 as libc::c_int
 }
 unsafe extern "C" fn fmtobject(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut obj: *mut js_Object,
-    mut gap: *const libc::c_char,
-    mut level: libc::c_int,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
+    obj: *mut js_Object,
+    gap: *const libc::c_char,
+    level: libc::c_int,
 ) {
     let mut key: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut save: libc::c_int = 0;
@@ -12747,7 +12606,7 @@ unsafe extern "C" fn fmtobject(
             }
             js_rot2(J);
             if fmtvalue(J, sb, key, gap, level + 1 as libc::c_int) == 0 {
-                 (**sb).s.set_len(save as usize);
+                (**sb).s.set_len(save as usize);
             } else {
                 n += 1;
                 n;
@@ -12762,10 +12621,10 @@ unsafe extern "C" fn fmtobject(
     js_putc(J, sb, '}' as i32);
 }
 unsafe extern "C" fn fmtarray(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut gap: *const libc::c_char,
-    mut level: libc::c_int,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
+    gap: *const libc::c_char,
+    level: libc::c_int,
 ) {
     let mut n: libc::c_int = 0;
     let mut i: libc::c_int = 0;
@@ -12811,11 +12670,11 @@ unsafe extern "C" fn fmtarray(
     js_putc(J, sb, ']' as i32);
 }
 unsafe extern "C" fn fmtvalue(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut key: *const libc::c_char,
-    mut gap: *const libc::c_char,
-    mut level: libc::c_int,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
+    key: *const libc::c_char,
+    gap: *const libc::c_char,
+    level: libc::c_int,
 ) -> libc::c_int {
     js_getproperty(J, -(1 as libc::c_int), key);
     if js_isobject(J, -(1 as libc::c_int)) != 0
@@ -12843,7 +12702,7 @@ unsafe extern "C" fn fmtvalue(
         js_rot2pop1(J);
     }
     if js_isobject(J, -(1 as libc::c_int)) != 0 && js_iscallable(J, -(1 as libc::c_int)) == 0 {
-        let mut obj: *mut js_Object = js_toobject(J, -(1 as libc::c_int));
+        let obj: *mut js_Object = js_toobject(J, -(1 as libc::c_int));
         match (*obj).type_0 as libc::c_uint {
             7 => {
                 fmtnum(J, sb, (*obj).u.number);
@@ -12892,7 +12751,7 @@ unsafe extern "C" fn fmtvalue(
     js_pop(J, 1 as libc::c_int);
     1 as libc::c_int
 }
-unsafe extern "C" fn JSON_stringify(mut J: *mut js_State) {
+unsafe extern "C" fn JSON_stringify(J: *mut js_State) {
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
     let mut buf: [libc::c_char; 12] = [0; 12];
     let mut gap: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -12972,7 +12831,7 @@ unsafe extern "C" fn JSON_stringify(mut J: *mut js_State) {
     js_free(J, sb as *mut libc::c_void);
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initjson(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initjson(J: *mut js_State) {
     js_pushobject(J, jsV_newobject(J, JS_CJSON, (*J).Object_prototype));
     jsB_propf(
         J,
@@ -12992,11 +12851,7 @@ pub unsafe extern "C" fn jsB_initjson(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn jsP_error(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) -> ! {
+unsafe extern "C" fn jsP_error(J: *mut js_State, fmt: *const libc::c_char, args: ...) -> ! {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 512] = [0; 512];
     let mut msgbuf: [libc::c_char; 256] = [0; 256];
@@ -13018,11 +12873,7 @@ unsafe extern "C" fn jsP_error(
     js_newsyntaxerror(J, buf.as_mut_ptr());
     js_throw(J);
 }
-unsafe extern "C" fn jsP_warning(
-    mut J: *mut js_State,
-    mut fmt: *const libc::c_char,
-    mut args: ...
-) {
+unsafe extern "C" fn jsP_warning(J: *mut js_State, fmt: *const libc::c_char, args: ...) {
     let mut ap: ::core::ffi::VaListImpl;
     let mut buf: [libc::c_char; 512] = [0; 512];
     let mut msg: [libc::c_char; 256] = [0; 256];
@@ -13044,15 +12895,15 @@ unsafe extern "C" fn jsP_warning(
     js_report(J, buf.as_mut_ptr());
 }
 unsafe extern "C" fn jsP_newnode(
-    mut J: *mut js_State,
-    mut type_0: js_AstType,
-    mut line: libc::c_int,
-    mut a: *mut js_Ast,
-    mut b: *mut js_Ast,
-    mut c: *mut js_Ast,
-    mut d: *mut js_Ast,
+    J: *mut js_State,
+    type_0: js_AstType,
+    line: libc::c_int,
+    a: *mut js_Ast,
+    b: *mut js_Ast,
+    c: *mut js_Ast,
+    d: *mut js_Ast,
 ) -> *mut js_Ast {
-    let mut node: *mut js_Ast = js_malloc(
+    let node: *mut js_Ast = js_malloc(
         J,
         ::core::mem::size_of::<js_Ast>() as libc::c_ulong as libc::c_int,
     ) as *mut js_Ast;
@@ -13083,7 +12934,7 @@ unsafe extern "C" fn jsP_newnode(
     (*J).gcast = node;
     node
 }
-unsafe extern "C" fn jsP_list(mut head: *mut js_Ast) -> *mut js_Ast {
+unsafe extern "C" fn jsP_list(head: *mut js_Ast) -> *mut js_Ast {
     let mut prev: *mut js_Ast = head;
     let mut node: *mut js_Ast = (*head).b;
     while !node.is_null() {
@@ -13094,11 +12945,11 @@ unsafe extern "C" fn jsP_list(mut head: *mut js_Ast) -> *mut js_Ast {
     head
 }
 unsafe extern "C" fn jsP_newstrnode(
-    mut J: *mut js_State,
-    mut type_0: js_AstType,
-    mut s: *const libc::c_char,
+    J: *mut js_State,
+    type_0: js_AstType,
+    s: *const libc::c_char,
 ) -> *mut js_Ast {
-    let mut node: *mut js_Ast = jsP_newnode(
+    let node: *mut js_Ast = jsP_newnode(
         J,
         type_0,
         (*J).lexline,
@@ -13111,11 +12962,11 @@ unsafe extern "C" fn jsP_newstrnode(
     node
 }
 unsafe extern "C" fn jsP_newnumnode(
-    mut J: *mut js_State,
-    mut type_0: js_AstType,
-    mut n: libc::c_double,
+    J: *mut js_State,
+    type_0: js_AstType,
+    n: libc::c_double,
 ) -> *mut js_Ast {
-    let mut node: *mut js_Ast = jsP_newnode(
+    let node: *mut js_Ast = jsP_newnode(
         J,
         type_0,
         (*J).lexline,
@@ -13127,28 +12978,28 @@ unsafe extern "C" fn jsP_newnumnode(
     (*node).number = n;
     node
 }
-unsafe extern "C" fn jsP_freejumps(mut J: *mut js_State, mut node: *mut js_JumpList) {
+unsafe extern "C" fn jsP_freejumps(J: *mut js_State, mut node: *mut js_JumpList) {
     while !node.is_null() {
-        let mut next_0: *mut js_JumpList = (*node).next;
+        let next_0: *mut js_JumpList = (*node).next;
         js_free(J, node as *mut libc::c_void);
         node = next_0;
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsP_freeparse(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsP_freeparse(J: *mut js_State) {
     let mut node: *mut js_Ast = (*J).gcast;
     while !node.is_null() {
-        let mut next_0: *mut js_Ast = (*node).gcnext;
+        let next_0: *mut js_Ast = (*node).gcnext;
         jsP_freejumps(J, (*node).jumps);
         js_free(J, node as *mut libc::c_void);
         node = next_0;
     }
     (*J).gcast = std::ptr::null_mut::<js_Ast>();
 }
-unsafe extern "C" fn jsP_next(mut J: *mut js_State) {
+unsafe extern "C" fn jsP_next(J: *mut js_State) {
     (*J).lookahead = jsY_lex(J);
 }
-unsafe extern "C" fn semicolon(mut J: *mut js_State) {
+unsafe extern "C" fn semicolon(J: *mut js_State) {
     if (*J).lookahead == ';' as i32 {
         jsP_next(J);
         return;
@@ -13162,7 +13013,7 @@ unsafe extern "C" fn semicolon(mut J: *mut js_State) {
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn identifier(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn identifier(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == TK_IDENTIFIER as libc::c_int {
         a = jsP_newstrnode(J, AST_IDENTIFIER, (*J).text);
@@ -13175,15 +13026,15 @@ unsafe extern "C" fn identifier(mut J: *mut js_State) -> *mut js_Ast {
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn identifieropt(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn identifieropt(J: *mut js_State) -> *mut js_Ast {
     if (*J).lookahead == TK_IDENTIFIER as libc::c_int {
         return identifier(J);
     }
     std::ptr::null_mut::<js_Ast>()
 }
-unsafe extern "C" fn identifiername(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn identifiername(J: *mut js_State) -> *mut js_Ast {
     if (*J).lookahead == TK_IDENTIFIER as libc::c_int || (*J).lookahead >= TK_BREAK as libc::c_int {
-        let mut a: *mut js_Ast = jsP_newstrnode(J, AST_IDENTIFIER, (*J).text);
+        let a: *mut js_Ast = jsP_newstrnode(J, AST_IDENTIFIER, (*J).text);
         jsP_next(J);
         return a;
     }
@@ -13194,8 +13045,8 @@ unsafe extern "C" fn identifiername(mut J: *mut js_State) -> *mut js_Ast {
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn arrayelement(mut J: *mut js_State) -> *mut js_Ast {
-    let mut line: libc::c_int = (*J).lexline;
+unsafe extern "C" fn arrayelement(J: *mut js_State) -> *mut js_Ast {
+    let line: libc::c_int = (*J).lexline;
     if (*J).lookahead == ',' as i32 {
         return jsP_newnode(
             J,
@@ -13209,7 +13060,7 @@ unsafe extern "C" fn arrayelement(mut J: *mut js_State) -> *mut js_Ast {
     }
     assignment(J, 0 as libc::c_int)
 }
-unsafe extern "C" fn arrayliteral(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn arrayliteral(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == ']' as i32 {
@@ -13247,7 +13098,7 @@ unsafe extern "C" fn arrayliteral(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn propname(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn propname(J: *mut js_State) -> *mut js_Ast {
     let mut name: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == TK_NUMBER as libc::c_int {
         name = jsP_newnumnode(J, EXP_NUMBER, (*J).number);
@@ -13260,12 +13111,12 @@ unsafe extern "C" fn propname(mut J: *mut js_State) -> *mut js_Ast {
     }
     name
 }
-unsafe extern "C" fn propassign(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn propassign(J: *mut js_State) -> *mut js_Ast {
     let mut name: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut value: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut arg: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut body: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     name = propname(J);
     if (*J).lookahead != ':' as i32
         && (*name).type_0 as libc::c_uint == AST_IDENTIFIER as libc::c_int as libc::c_uint
@@ -13387,7 +13238,7 @@ unsafe extern "C" fn propassign(mut J: *mut js_State) -> *mut js_Ast {
         std::ptr::null_mut::<js_Ast>(),
     )
 }
-unsafe extern "C" fn objectliteral(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn objectliteral(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == '}' as i32 {
@@ -13426,7 +13277,7 @@ unsafe extern "C" fn objectliteral(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn parameters(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn parameters(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == ')' as i32 {
@@ -13462,7 +13313,7 @@ unsafe extern "C" fn parameters(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn fundec(mut J: *mut js_State, mut line: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn fundec(J: *mut js_State, line: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut c: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -13499,7 +13350,7 @@ unsafe extern "C" fn fundec(mut J: *mut js_State, mut line: libc::c_int) -> *mut
     c = funbody(J);
     jsP_newnode(J, AST_FUNDEC, line, a, b, c, std::ptr::null_mut::<js_Ast>())
 }
-unsafe extern "C" fn funstm(mut J: *mut js_State, mut line: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn funstm(J: *mut js_State, line: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut c: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -13560,7 +13411,7 @@ unsafe extern "C" fn funstm(mut J: *mut js_State, mut line: libc::c_int) -> *mut
         std::ptr::null_mut::<js_Ast>(),
     )
 }
-unsafe extern "C" fn funexp(mut J: *mut js_State, mut line: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn funexp(J: *mut js_State, line: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut c: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -13597,9 +13448,9 @@ unsafe extern "C" fn funexp(mut J: *mut js_State, mut line: libc::c_int) -> *mut
     c = funbody(J);
     jsP_newnode(J, EXP_FUN, line, a, b, c, std::ptr::null_mut::<js_Ast>())
 }
-unsafe extern "C" fn primary(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn primary(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if (*J).lookahead == TK_IDENTIFIER as libc::c_int {
         a = jsP_newstrnode(J, EXP_IDENTIFIER, (*J).text);
         jsP_next(J);
@@ -13783,7 +13634,7 @@ unsafe extern "C" fn primary(mut J: *mut js_State) -> *mut js_Ast {
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn arguments(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn arguments(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == ')' as i32 {
@@ -13819,10 +13670,10 @@ unsafe extern "C" fn arguments(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn newexp(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn newexp(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == TK_NEW as libc::c_int {
         jsP_next(J);
         1 as libc::c_int
@@ -13884,10 +13735,10 @@ unsafe extern "C" fn newexp(mut J: *mut js_State) -> *mut js_Ast {
     }
     primary(J)
 }
-unsafe extern "C" fn memberexp(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn memberexp(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = newexp(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -13951,10 +13802,10 @@ unsafe extern "C" fn memberexp(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn callexp(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn callexp(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = newexp(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14048,9 +13899,9 @@ unsafe extern "C" fn callexp(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn postfix(mut J: *mut js_State) -> *mut js_Ast {
-    let mut a: *mut js_Ast = callexp(J);
-    let mut line: libc::c_int = (*J).lexline;
+unsafe extern "C" fn postfix(J: *mut js_State) -> *mut js_Ast {
+    let a: *mut js_Ast = callexp(J);
+    let line: libc::c_int = (*J).lexline;
     if (*J).newline == 0
         && (if (*J).lookahead == TK_INC as libc::c_int {
             jsP_next(J);
@@ -14089,9 +13940,9 @@ unsafe extern "C" fn postfix(mut J: *mut js_State) -> *mut js_Ast {
     }
     a
 }
-unsafe extern "C" fn unary(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn unary(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     (*J).astdepth += 1;
     if (*J).astdepth > 400 as libc::c_int {
         jsP_error(
@@ -14250,10 +14101,10 @@ unsafe extern "C" fn unary(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth;
     a
 }
-unsafe extern "C" fn multiplicative(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn multiplicative(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = unary(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14319,10 +14170,10 @@ unsafe extern "C" fn multiplicative(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn additive(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn additive(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = multiplicative(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14372,10 +14223,10 @@ unsafe extern "C" fn additive(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn shift(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn shift(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = additive(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14441,10 +14292,10 @@ unsafe extern "C" fn shift(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn relational(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn relational(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = shift(J);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14559,10 +14410,10 @@ unsafe extern "C" fn relational(mut J: *mut js_State, mut notin: libc::c_int) ->
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn equality(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn equality(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = relational(J, notin);
     let mut line: libc::c_int = 0;
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     loop {
         (*J).astdepth += 1;
         if (*J).astdepth > 400 as libc::c_int {
@@ -14644,9 +14495,9 @@ unsafe extern "C" fn equality(mut J: *mut js_State, mut notin: libc::c_int) -> *
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn bitand(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn bitand(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = equality(J, notin);
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     let mut line: libc::c_int = (*J).lexline;
     while if (*J).lookahead == '&' as i32 {
         jsP_next(J);
@@ -14676,9 +14527,9 @@ unsafe extern "C" fn bitand(mut J: *mut js_State, mut notin: libc::c_int) -> *mu
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn bitxor(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn bitxor(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = bitand(J, notin);
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     let mut line: libc::c_int = (*J).lexline;
     while if (*J).lookahead == '^' as i32 {
         jsP_next(J);
@@ -14708,9 +14559,9 @@ unsafe extern "C" fn bitxor(mut J: *mut js_State, mut notin: libc::c_int) -> *mu
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn bitor(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn bitor(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = bitxor(J, notin);
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     let mut line: libc::c_int = (*J).lexline;
     while if (*J).lookahead == '|' as i32 {
         jsP_next(J);
@@ -14740,9 +14591,9 @@ unsafe extern "C" fn bitor(mut J: *mut js_State, mut notin: libc::c_int) -> *mut
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn logand(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn logand(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = bitor(J, notin);
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == TK_AND as libc::c_int {
         jsP_next(J);
         1 as libc::c_int
@@ -14771,9 +14622,9 @@ unsafe extern "C" fn logand(mut J: *mut js_State, mut notin: libc::c_int) -> *mu
     }
     a
 }
-unsafe extern "C" fn logor(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn logor(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = logand(J, notin);
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == TK_OR as libc::c_int {
         jsP_next(J);
         1 as libc::c_int
@@ -14802,9 +14653,9 @@ unsafe extern "C" fn logor(mut J: *mut js_State, mut notin: libc::c_int) -> *mut
     }
     a
 }
-unsafe extern "C" fn conditional(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
-    let mut a: *mut js_Ast = logor(J, notin);
-    let mut line: libc::c_int = (*J).lexline;
+unsafe extern "C" fn conditional(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
+    let a: *mut js_Ast = logor(J, notin);
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == '?' as i32 {
         jsP_next(J);
         1 as libc::c_int
@@ -14843,9 +14694,9 @@ unsafe extern "C" fn conditional(mut J: *mut js_State, mut notin: libc::c_int) -
     }
     a
 }
-unsafe extern "C" fn assignment(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn assignment(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = conditional(J, notin);
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     (*J).astdepth += 1;
     if (*J).astdepth > 400 as libc::c_int {
         jsP_error(
@@ -15050,9 +14901,9 @@ unsafe extern "C" fn assignment(mut J: *mut js_State, mut notin: libc::c_int) ->
     (*J).astdepth;
     a
 }
-unsafe extern "C" fn expression(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn expression(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = assignment(J, notin);
-    let mut SAVE: libc::c_int = (*J).astdepth;
+    let SAVE: libc::c_int = (*J).astdepth;
     let mut line: libc::c_int = (*J).lexline;
     while if (*J).lookahead == ',' as i32 {
         jsP_next(J);
@@ -15082,9 +14933,9 @@ unsafe extern "C" fn expression(mut J: *mut js_State, mut notin: libc::c_int) ->
     (*J).astdepth = SAVE;
     a
 }
-unsafe extern "C" fn vardec(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
-    let mut a: *mut js_Ast = identifier(J);
-    let mut line: libc::c_int = (*J).lexline;
+unsafe extern "C" fn vardec(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
+    let a: *mut js_Ast = identifier(J);
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == '=' as i32 {
         jsP_next(J);
         1 as libc::c_int
@@ -15112,7 +14963,7 @@ unsafe extern "C" fn vardec(mut J: *mut js_State, mut notin: libc::c_int) -> *mu
         std::ptr::null_mut::<js_Ast>(),
     )
 }
-unsafe extern "C" fn vardeclist(mut J: *mut js_State, mut notin: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn vardeclist(J: *mut js_State, notin: libc::c_int) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     tail = jsP_newnode(
@@ -15145,7 +14996,7 @@ unsafe extern "C" fn vardeclist(mut J: *mut js_State, mut notin: libc::c_int) ->
     }
     jsP_list(head)
 }
-unsafe extern "C" fn statementlist(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn statementlist(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == '}' as i32
@@ -15181,10 +15032,10 @@ unsafe extern "C" fn statementlist(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn caseclause(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn caseclause(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == TK_CASE as libc::c_int {
         jsP_next(J);
         1 as libc::c_int
@@ -15257,7 +15108,7 @@ unsafe extern "C" fn caseclause(mut J: *mut js_State) -> *mut js_Ast {
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn caselist(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn caselist(J: *mut js_State) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == '}' as i32 {
@@ -15287,9 +15138,9 @@ unsafe extern "C" fn caselist(mut J: *mut js_State) -> *mut js_Ast {
     }
     jsP_list(head)
 }
-unsafe extern "C" fn block(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn block(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == '{' as i32 {
         jsP_next(J);
         1 as libc::c_int
@@ -15329,7 +15180,7 @@ unsafe extern "C" fn block(mut J: *mut js_State) -> *mut js_Ast {
         std::ptr::null_mut::<js_Ast>(),
     )
 }
-unsafe extern "C" fn forexpression(mut J: *mut js_State, mut end: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn forexpression(J: *mut js_State, end: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead != end {
         a = expression(J, 0 as libc::c_int);
@@ -15350,7 +15201,7 @@ unsafe extern "C" fn forexpression(mut J: *mut js_State, mut end: libc::c_int) -
     }
     a
 }
-unsafe extern "C" fn forstatement(mut J: *mut js_State, mut line: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn forstatement(J: *mut js_State, line: libc::c_int) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut c: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
@@ -15476,13 +15327,13 @@ unsafe extern "C" fn forstatement(mut J: *mut js_State, mut line: libc::c_int) -
         jsY_tokenstring((*J).lookahead),
     );
 }
-unsafe extern "C" fn statement(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn statement(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut b: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut c: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut d: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut stm: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = (*J).lexline;
+    let line: libc::c_int = (*J).lexline;
     (*J).astdepth += 1;
     if (*J).astdepth > 400 as libc::c_int {
         jsP_error(
@@ -16018,8 +15869,8 @@ unsafe extern "C" fn statement(mut J: *mut js_State) -> *mut js_Ast {
     (*J).astdepth;
     stm
 }
-unsafe extern "C" fn scriptelement(mut J: *mut js_State) -> *mut js_Ast {
-    let mut line: libc::c_int = (*J).lexline;
+unsafe extern "C" fn scriptelement(J: *mut js_State) -> *mut js_Ast {
+    let line: libc::c_int = (*J).lexline;
     if if (*J).lookahead == TK_FUNCTION as libc::c_int {
         jsP_next(J);
         1 as libc::c_int
@@ -16031,7 +15882,7 @@ unsafe extern "C" fn scriptelement(mut J: *mut js_State) -> *mut js_Ast {
     }
     statement(J)
 }
-unsafe extern "C" fn script(mut J: *mut js_State, mut terminator: libc::c_int) -> *mut js_Ast {
+unsafe extern "C" fn script(J: *mut js_State, terminator: libc::c_int) -> *mut js_Ast {
     let mut head: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut tail: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if (*J).lookahead == terminator {
@@ -16061,7 +15912,7 @@ unsafe extern "C" fn script(mut J: *mut js_State, mut terminator: libc::c_int) -
     }
     jsP_list(head)
 }
-unsafe extern "C" fn funbody(mut J: *mut js_State) -> *mut js_Ast {
+unsafe extern "C" fn funbody(J: *mut js_State) -> *mut js_Ast {
     let mut a: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     if if (*J).lookahead == '{' as i32 {
         jsP_next(J);
@@ -16095,8 +15946,8 @@ unsafe extern "C" fn funbody(mut J: *mut js_State) -> *mut js_Ast {
     a
 }
 unsafe extern "C" fn toint32(mut d: libc::c_double) -> libc::c_int {
-    let mut two32: libc::c_double = 4294967296.0f64;
-    let mut two31: libc::c_double = 2147483648.0f64;
+    let two32: libc::c_double = 4294967296.0f64;
+    let two31: libc::c_double = 2147483648.0f64;
     if d.is_finite() as i32 == 0 || d == 0 as libc::c_int as libc::c_double {
         return 0 as libc::c_int;
     }
@@ -16112,10 +15963,10 @@ unsafe extern "C" fn toint32(mut d: libc::c_double) -> libc::c_int {
         d as libc::c_int
     }
 }
-unsafe extern "C" fn touint32(mut d: libc::c_double) -> libc::c_uint {
+unsafe extern "C" fn touint32(d: libc::c_double) -> libc::c_uint {
     toint32(d) as libc::c_uint
 }
-unsafe extern "C" fn jsP_setnumnode(mut node: *mut js_Ast, mut x: libc::c_double) -> libc::c_int {
+unsafe extern "C" fn jsP_setnumnode(node: *mut js_Ast, x: libc::c_double) -> libc::c_int {
     (*node).type_0 = EXP_NUMBER;
     (*node).number = x;
     (*node).d = std::ptr::null_mut::<js_Ast>();
@@ -16209,9 +16060,9 @@ unsafe extern "C" fn jsP_foldconst(mut node: *mut js_Ast) -> libc::c_int {
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsP_parse(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
 ) -> *mut js_Ast {
     let mut p: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     jsY_initlex(J, filename, source);
@@ -16225,13 +16076,13 @@ pub unsafe extern "C" fn jsP_parse(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsP_parsefunction(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut params: *const libc::c_char,
-    mut body: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    params: *const libc::c_char,
+    body: *const libc::c_char,
 ) -> *mut js_Ast {
     let mut p: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
-    let mut line: libc::c_int = 0 as libc::c_int;
+    let line: libc::c_int = 0 as libc::c_int;
     if !params.is_null() {
         jsY_initlex(J, filename, params);
         jsP_next(J);
@@ -16286,13 +16137,13 @@ static mut sentinel: js_Property = unsafe {
     }
 };
 unsafe extern "C" fn newproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
-    let mut n: libc::c_int =
+    let n: libc::c_int =
         (strlen(name)).wrapping_add(1 as libc::c_int as libc::c_ulong) as libc::c_int;
-    let mut node: *mut js_Property = js_malloc(
+    let node: *mut js_Property = js_malloc(
         J,
         (56 as libc::c_ulong).wrapping_add(n as libc::c_ulong) as libc::c_int,
     ) as *mut js_Property;
@@ -16317,10 +16168,10 @@ unsafe extern "C" fn newproperty(
 }
 unsafe extern "C" fn lookup(
     mut node: *mut js_Property,
-    mut name: *const libc::c_char,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     while node != &mut sentinel as *mut js_Property {
-        let mut c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
+        let c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
         if c == 0 as libc::c_int {
             return node;
         } else if c < 0 as libc::c_int {
@@ -16333,7 +16184,7 @@ unsafe extern "C" fn lookup(
 }
 unsafe extern "C" fn skew(mut node: *mut js_Property) -> *mut js_Property {
     if (*(*node).left).level == (*node).level {
-        let mut temp: *mut js_Property = node;
+        let temp: *mut js_Property = node;
         node = (*node).left;
         (*temp).left = (*node).right;
         (*node).right = temp;
@@ -16342,7 +16193,7 @@ unsafe extern "C" fn skew(mut node: *mut js_Property) -> *mut js_Property {
 }
 unsafe extern "C" fn split(mut node: *mut js_Property) -> *mut js_Property {
     if (*(*(*node).right).right).level == (*node).level {
-        let mut temp: *mut js_Property = node;
+        let temp: *mut js_Property = node;
         node = (*node).right;
         (*temp).right = (*node).left;
         (*node).left = temp;
@@ -16352,14 +16203,14 @@ unsafe extern "C" fn split(mut node: *mut js_Property) -> *mut js_Property {
     node
 }
 unsafe extern "C" fn insert(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
+    J: *mut js_State,
+    obj: *mut js_Object,
     mut node: *mut js_Property,
-    mut name: *const libc::c_char,
-    mut result: *mut *mut js_Property,
+    name: *const libc::c_char,
+    result: *mut *mut js_Property,
 ) -> *mut js_Property {
     if node != &mut sentinel as *mut js_Property {
-        let mut c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
+        let c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
         if c < 0 as libc::c_int {
             (*node).left = insert(J, obj, (*node).left, name, result);
         } else if c > 0 as libc::c_int {
@@ -16375,25 +16226,21 @@ unsafe extern "C" fn insert(
     *result = newproperty(J, obj, name);
     *result
 }
-unsafe extern "C" fn freeproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut node: *mut js_Property,
-) {
+unsafe extern "C" fn freeproperty(J: *mut js_State, obj: *mut js_Object, node: *mut js_Property) {
     js_free(J, node as *mut libc::c_void);
     (*obj).count -= 1;
     (*obj).count;
 }
 unsafe extern "C" fn unlinkproperty(
     mut node: *mut js_Property,
-    mut name: *const libc::c_char,
-    mut garbage: *mut *mut js_Property,
+    name: *const libc::c_char,
+    garbage: *mut *mut js_Property,
 ) -> *mut js_Property {
     let mut temp: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut a: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut b: *mut js_Property = std::ptr::null_mut::<js_Property>();
     if node != &mut sentinel as *mut js_Property {
-        let mut c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
+        let c: libc::c_int = strcmp(name, ((*node).name).as_mut_ptr());
         if c < 0 as libc::c_int {
             (*node).left = unlinkproperty((*node).left, name, garbage);
         } else if c > 0 as libc::c_int {
@@ -16443,10 +16290,10 @@ unsafe extern "C" fn unlinkproperty(
     node
 }
 unsafe extern "C" fn deleteproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
+    J: *mut js_State,
+    obj: *mut js_Object,
     mut tree: *mut js_Property,
-    mut name: *const libc::c_char,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     let mut garbage: *mut js_Property = &mut sentinel;
     tree = unlinkproperty(tree, name, &mut garbage);
@@ -16457,11 +16304,11 @@ unsafe extern "C" fn deleteproperty(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_newobject(
-    mut J: *mut js_State,
-    mut type_0: js_Class,
-    mut prototype: *mut js_Object,
+    J: *mut js_State,
+    type_0: js_Class,
+    prototype: *mut js_Object,
 ) -> *mut js_Object {
-    let mut obj: *mut js_Object = js_malloc(
+    let obj: *mut js_Object = js_malloc(
         J,
         ::core::mem::size_of::<js_Object>() as libc::c_ulong as libc::c_int,
     ) as *mut js_Object;
@@ -16483,22 +16330,22 @@ pub unsafe extern "C" fn jsV_newobject(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_getownproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     lookup((*obj).properties, name)
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_getpropertyx(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
-    mut own: *mut libc::c_int,
+    name: *const libc::c_char,
+    own: *mut libc::c_int,
 ) -> *mut js_Property {
     *own = 1 as libc::c_int;
     loop {
-        let mut ref_0: *mut js_Property = lookup((*obj).properties, name);
+        let ref_0: *mut js_Property = lookup((*obj).properties, name);
         if !ref_0.is_null() {
             return ref_0;
         }
@@ -16512,12 +16359,12 @@ pub unsafe extern "C" fn jsV_getpropertyx(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_getproperty(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     loop {
-        let mut ref_0: *mut js_Property = lookup((*obj).properties, name);
+        let ref_0: *mut js_Property = lookup((*obj).properties, name);
         if !ref_0.is_null() {
             return ref_0;
         }
@@ -16529,12 +16376,12 @@ pub unsafe extern "C" fn jsV_getproperty(
     std::ptr::null_mut::<js_Property>()
 }
 unsafe extern "C" fn jsV_getenumproperty(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     loop {
-        let mut ref_0: *mut js_Property = lookup((*obj).properties, name);
+        let ref_0: *mut js_Property = lookup((*obj).properties, name);
         if !ref_0.is_null() && (*ref_0).atts & JS_DONTENUM as libc::c_int == 0 {
             return ref_0;
         }
@@ -16547,9 +16394,9 @@ unsafe extern "C" fn jsV_getenumproperty(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_setproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) -> *mut js_Property {
     let mut result: *mut js_Property = std::ptr::null_mut::<js_Property>();
     if (*obj).extensible == 0 {
@@ -16567,20 +16414,20 @@ pub unsafe extern "C" fn jsV_setproperty(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_delproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) {
     (*obj).properties = deleteproperty(J, obj, (*obj).properties, name);
 }
 unsafe extern "C" fn itnewnode(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut next_0: *mut js_Iterator,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    next_0: *mut js_Iterator,
 ) -> *mut js_Iterator {
-    let mut n: libc::c_int =
+    let n: libc::c_int =
         (strlen(name)).wrapping_add(1 as libc::c_int as libc::c_ulong) as libc::c_int;
-    let mut node: *mut js_Iterator = js_malloc(
+    let node: *mut js_Iterator = js_malloc(
         J,
         (8 as libc::c_ulong).wrapping_add(n as libc::c_ulong) as libc::c_int,
     ) as *mut js_Iterator;
@@ -16593,10 +16440,10 @@ unsafe extern "C" fn itnewnode(
     node
 }
 unsafe extern "C" fn itwalk(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut iter: *mut js_Iterator,
-    mut prop: *mut js_Property,
-    mut seen: *mut js_Object,
+    prop: *mut js_Property,
+    seen: *mut js_Object,
 ) -> *mut js_Iterator {
     if (*prop).right != &mut sentinel as *mut js_Property {
         iter = itwalk(J, iter, (*prop).right, seen);
@@ -16611,7 +16458,7 @@ unsafe extern "C" fn itwalk(
     }
     iter
 }
-unsafe extern "C" fn itflatten(mut J: *mut js_State, mut obj: *mut js_Object) -> *mut js_Iterator {
+unsafe extern "C" fn itflatten(J: *mut js_State, obj: *mut js_Object) -> *mut js_Iterator {
     let mut iter: *mut js_Iterator = std::ptr::null_mut::<js_Iterator>();
     if !((*obj).prototype).is_null() {
         iter = itflatten(J, (*obj).prototype);
@@ -16623,11 +16470,11 @@ unsafe extern "C" fn itflatten(mut J: *mut js_State, mut obj: *mut js_Object) ->
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_newiterator(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut own: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    own: libc::c_int,
 ) -> *mut js_Object {
-    let mut io: *mut js_Object = jsV_newobject(J, JS_CITERATOR, std::ptr::null_mut::<js_Object>());
+    let io: *mut js_Object = jsV_newobject(J, JS_CITERATOR, std::ptr::null_mut::<js_Object>());
     (*io).u.iter.target = obj;
     (*io).u.iter.i = 0 as libc::c_int;
     (*io).u.iter.n = 0 as libc::c_int;
@@ -16657,8 +16504,8 @@ pub unsafe extern "C" fn jsV_newiterator(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_nextiterator(
-    mut J: *mut js_State,
-    mut io: *mut js_Object,
+    J: *mut js_State,
+    io: *mut js_Object,
 ) -> *const libc::c_char {
     if (*io).type_0 as libc::c_uint != JS_CITERATOR as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not an iterator\0" as *const u8 as *const libc::c_char);
@@ -16670,7 +16517,7 @@ pub unsafe extern "C" fn jsV_nextiterator(
         return ((*J).scratch).as_mut_ptr();
     }
     while !((*io).u.iter.current).is_null() {
-        let mut name: *const libc::c_char = ((*(*io).u.iter.current).name).as_mut_ptr();
+        let name: *const libc::c_char = ((*(*io).u.iter.current).name).as_mut_ptr();
         (*io).u.iter.current = (*(*io).u.iter.current).next;
         if !(jsV_getproperty(J, (*io).u.iter.target, name)).is_null() {
             return name;
@@ -16680,9 +16527,9 @@ pub unsafe extern "C" fn jsV_nextiterator(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_resizearray(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut newlen: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    newlen: libc::c_int,
 ) {
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -16715,7 +16562,7 @@ pub unsafe extern "C" fn jsV_resizearray(
     };
     if newlen < (*obj).u.a.length {
         if (*obj).u.a.length > (*obj).count * 2 as libc::c_int {
-            let mut it: *mut js_Object = jsV_newiterator(J, obj, 1 as libc::c_int);
+            let it: *mut js_Object = jsV_newiterator(J, obj, 1 as libc::c_int);
             loop {
                 s = jsV_nextiterator(J, it);
                 if s.is_null() {
@@ -16743,8 +16590,8 @@ pub unsafe extern "C" fn jsV_resizearray(
     (*obj).u.a.length = newlen;
 }
 unsafe extern "C" fn escaperegexp(
-    mut J: *mut js_State,
-    mut pattern: *const libc::c_char,
+    J: *mut js_State,
+    pattern: *const libc::c_char,
 ) -> *mut libc::c_char {
     let mut copy: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut p: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
@@ -16780,10 +16627,10 @@ unsafe extern "C" fn escaperegexp(
     copy
 }
 unsafe extern "C" fn js_newregexpx(
-    mut J: *mut js_State,
-    mut pattern: *const libc::c_char,
-    mut flags: libc::c_int,
-    mut is_clone: libc::c_int,
+    J: *mut js_State,
+    pattern: *const libc::c_char,
+    flags: libc::c_int,
+    is_clone: libc::c_int,
 ) {
     let mut error: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -16817,17 +16664,17 @@ unsafe extern "C" fn js_newregexpx(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newregexp(
-    mut J: *mut js_State,
-    mut pattern: *const libc::c_char,
-    mut flags: libc::c_int,
+    J: *mut js_State,
+    pattern: *const libc::c_char,
+    flags: libc::c_int,
 ) {
     js_newregexpx(J, pattern, flags, 0 as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_RegExp_prototype_exec(
-    mut J: *mut js_State,
-    mut re: *mut js_Regexp,
-    mut text: *const libc::c_char,
+    J: *mut js_State,
+    re: *mut js_Regexp,
+    text: *const libc::c_char,
 ) {
     let mut haystack: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut result: libc::c_int = 0;
@@ -16897,7 +16744,7 @@ pub unsafe extern "C" fn js_RegExp_prototype_exec(
     }
     js_pushnull(J);
 }
-unsafe extern "C" fn Rp_test(mut J: *mut js_State) {
+unsafe extern "C" fn Rp_test(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut text: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut result: libc::c_int = 0;
@@ -16941,7 +16788,7 @@ unsafe extern "C" fn Rp_test(mut J: *mut js_State) {
     }
     js_pushboolean(J, 0 as libc::c_int);
 }
-unsafe extern "C" fn jsB_new_RegExp(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_RegExp(J: *mut js_State) {
     let mut old: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut pattern: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut flags: libc::c_int = 0;
@@ -17023,13 +16870,13 @@ unsafe extern "C" fn jsB_new_RegExp(mut J: *mut js_State) {
     }
     js_newregexpx(J, pattern, flags, is_clone);
 }
-unsafe extern "C" fn jsB_RegExp(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_RegExp(J: *mut js_State) {
     if js_isregexp(J, 1 as libc::c_int) != 0 {
         return;
     }
     jsB_new_RegExp(J);
 }
-unsafe extern "C" fn Rp_toString(mut J: *mut js_State) {
+unsafe extern "C" fn Rp_toString(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut out: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     re = js_toregexp(J, 0 as libc::c_int);
@@ -17061,7 +16908,7 @@ unsafe extern "C" fn Rp_toString(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, out as *mut libc::c_void);
 }
-unsafe extern "C" fn Rp_exec(mut J: *mut js_State) {
+unsafe extern "C" fn Rp_exec(J: *mut js_State) {
     js_RegExp_prototype_exec(
         J,
         js_toregexp(J, 0 as libc::c_int),
@@ -17069,7 +16916,7 @@ unsafe extern "C" fn Rp_exec(mut J: *mut js_State) {
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initregexp(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initregexp(J: *mut js_State) {
     js_pushobject(J, (*J).RegExp_prototype);
     jsB_propf(
         J,
@@ -17102,11 +16949,7 @@ pub unsafe extern "C" fn jsB_initregexp(mut J: *mut js_State) {
         JS_DONTENUM as libc::c_int,
     );
 }
-unsafe extern "C" fn reprnum(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut n: libc::c_double,
-) {
+unsafe extern "C" fn reprnum(J: *mut js_State, sb: *mut *mut js_Buffer, n: libc::c_double) {
     let mut buf: [libc::c_char; 40] = [0; 40];
     if n == 0 as libc::c_int as libc::c_double && n.is_sign_negative() as libc::c_int != 0 {
         js_puts(J, sb, b"-0\0" as *const u8 as *const libc::c_char);
@@ -17115,8 +16958,8 @@ unsafe extern "C" fn reprnum(
     };
 }
 unsafe extern "C" fn reprstr(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
     mut s: *const libc::c_char,
 ) {
     static mut HEX: *const libc::c_char = b"0123456789ABCDEF\0" as *const u8 as *const libc::c_char;
@@ -17206,9 +17049,9 @@ unsafe extern "C" fn reprstr(
     js_putc(J, sb, '"' as i32);
 }
 unsafe extern "C" fn reprident(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    sb: *mut *mut js_Buffer,
+    name: *const libc::c_char,
 ) {
     let mut p: *const libc::c_char = name;
     if *p as libc::c_int >= '0' as i32 && *p as libc::c_int <= '9' as i32 {
@@ -17235,7 +17078,7 @@ unsafe extern "C" fn reprident(
         reprstr(J, sb, name);
     };
 }
-unsafe extern "C" fn reprobject(mut J: *mut js_State, mut sb: *mut *mut js_Buffer) {
+unsafe extern "C" fn reprobject(J: *mut js_State, sb: *mut *mut js_Buffer) {
     let mut key: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut i: libc::c_int = 0;
     let mut n: libc::c_int = 0;
@@ -17271,7 +17114,7 @@ unsafe extern "C" fn reprobject(mut J: *mut js_State, mut sb: *mut *mut js_Buffe
     js_pop(J, 1 as libc::c_int);
     js_putc(J, sb, '}' as i32);
 }
-unsafe extern "C" fn reprarray(mut J: *mut js_State, mut sb: *mut *mut js_Buffer) {
+unsafe extern "C" fn reprarray(J: *mut js_State, sb: *mut *mut js_Buffer) {
     let mut n: libc::c_int = 0;
     let mut i: libc::c_int = 0;
     n = js_gettop(J) - 1 as libc::c_int;
@@ -17300,11 +17143,7 @@ unsafe extern "C" fn reprarray(mut J: *mut js_State, mut sb: *mut *mut js_Buffer
     }
     js_putc(J, sb, ']' as i32);
 }
-unsafe extern "C" fn reprfun(
-    mut J: *mut js_State,
-    mut sb: *mut *mut js_Buffer,
-    mut fun: *mut js_Function,
-) {
+unsafe extern "C" fn reprfun(J: *mut js_State, sb: *mut *mut js_Buffer, fun: *mut js_Function) {
     let mut i: libc::c_int = 0;
     js_puts(J, sb, b"function \0" as *const u8 as *const libc::c_char);
     js_puts(J, sb, (*fun).name);
@@ -17324,7 +17163,7 @@ unsafe extern "C" fn reprfun(
         b") { [byte code] }\0" as *const u8 as *const libc::c_char,
     );
 }
-unsafe extern "C" fn reprvalue(mut J: *mut js_State, mut sb: *mut *mut js_Buffer) {
+unsafe extern "C" fn reprvalue(J: *mut js_State, sb: *mut *mut js_Buffer) {
     if js_isundefined(J, -(1 as libc::c_int)) != 0 {
         js_puts(J, sb, b"undefined\0" as *const u8 as *const libc::c_char);
     } else if js_isnull(J, -(1 as libc::c_int)) != 0 {
@@ -17344,7 +17183,7 @@ unsafe extern "C" fn reprvalue(mut J: *mut js_State, mut sb: *mut *mut js_Buffer
     } else if js_isstring(J, -(1 as libc::c_int)) != 0 {
         reprstr(J, sb, js_tostring(J, -(1 as libc::c_int)));
     } else if js_isobject(J, -(1 as libc::c_int)) != 0 {
-        let mut obj: *mut js_Object = js_toobject(J, -(1 as libc::c_int));
+        let obj: *mut js_Object = js_toobject(J, -(1 as libc::c_int));
         match (*obj).type_0 as libc::c_uint {
             1 => {
                 reprarray(J, sb);
@@ -17454,7 +17293,7 @@ unsafe extern "C" fn reprvalue(mut J: *mut js_State, mut sb: *mut *mut js_Buffer
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_repr(mut J: *mut js_State, mut idx: libc::c_int) {
+pub unsafe extern "C" fn js_repr(J: *mut js_State, idx: libc::c_int) {
     let mut sb: *mut js_Buffer = std::ptr::null_mut::<js_Buffer>();
     let mut savebot: libc::c_int = 0;
     if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
@@ -17480,10 +17319,7 @@ pub unsafe extern "C" fn js_repr(mut J: *mut js_State, mut idx: libc::c_int) {
     js_free(J, sb as *mut libc::c_void);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_torepr(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> *const libc::c_char {
+pub unsafe extern "C" fn js_torepr(J: *mut js_State, idx: libc::c_int) -> *const libc::c_char {
     js_repr(J, idx);
     js_replace(
         J,
@@ -17497,9 +17333,9 @@ pub unsafe extern "C" fn js_torepr(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_tryrepr(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut error: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    error: *const libc::c_char,
 ) -> *const libc::c_char {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
@@ -17510,7 +17346,7 @@ pub unsafe extern "C" fn js_tryrepr(
     js_endtry(J);
     s
 }
-unsafe extern "C" fn js_trystackoverflow(mut J: *mut js_State) {
+unsafe extern "C" fn js_trystackoverflow(J: *mut js_State) {
     (*((*J).stack).offset((*J).top as isize)).t.type_0 = JS_TLITSTR as libc::c_int as libc::c_char;
     let fresh53 = &mut (*((*J).stack).offset((*J).top as isize)).u.litstr;
     *fresh53 = b"exception stack overflow\0" as *const u8 as *const libc::c_char;
@@ -17518,7 +17354,7 @@ unsafe extern "C" fn js_trystackoverflow(mut J: *mut js_State) {
     (*J).top;
     js_throw(J);
 }
-unsafe extern "C" fn js_stackoverflow(mut J: *mut js_State) {
+unsafe extern "C" fn js_stackoverflow(J: *mut js_State) {
     (*((*J).stack).offset((*J).top as isize)).t.type_0 = JS_TLITSTR as libc::c_int as libc::c_char;
     let fresh54 = &mut (*((*J).stack).offset((*J).top as isize)).u.litstr;
     *fresh54 = b"stack overflow\0" as *const u8 as *const libc::c_char;
@@ -17526,7 +17362,7 @@ unsafe extern "C" fn js_stackoverflow(mut J: *mut js_State) {
     (*J).top;
     js_throw(J);
 }
-unsafe extern "C" fn js_outofmemory(mut J: *mut js_State) {
+unsafe extern "C" fn js_outofmemory(J: *mut js_State) {
     (*((*J).stack).offset((*J).top as isize)).t.type_0 = JS_TLITSTR as libc::c_int as libc::c_char;
     let fresh55 = &mut (*((*J).stack).offset((*J).top as isize)).u.litstr;
     *fresh55 = b"out of memory\0" as *const u8 as *const libc::c_char;
@@ -17535,11 +17371,8 @@ unsafe extern "C" fn js_outofmemory(mut J: *mut js_State) {
     js_throw(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_malloc(
-    mut J: *mut js_State,
-    mut size: libc::c_int,
-) -> *mut libc::c_void {
-    let mut ptr: *mut libc::c_void = ((*J).alloc).expect("non-null function pointer")(
+pub unsafe extern "C" fn js_malloc(J: *mut js_State, size: libc::c_int) -> *mut libc::c_void {
+    let ptr: *mut libc::c_void = ((*J).alloc).expect("non-null function pointer")(
         (*J).actx,
         std::ptr::null_mut::<libc::c_void>(),
         size,
@@ -17551,9 +17384,9 @@ pub unsafe extern "C" fn js_malloc(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_realloc(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut ptr: *mut libc::c_void,
-    mut size: libc::c_int,
+    size: libc::c_int,
 ) -> *mut libc::c_void {
     ptr = ((*J).alloc).expect("non-null function pointer")((*J).actx, ptr, size);
     if ptr.is_null() {
@@ -17562,13 +17395,9 @@ pub unsafe extern "C" fn js_realloc(
     ptr
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_strdup(
-    mut J: *mut js_State,
-    mut s: *const libc::c_char,
-) -> *mut libc::c_char {
-    let mut n: libc::c_int =
-        (strlen(s)).wrapping_add(1 as libc::c_int as libc::c_ulong) as libc::c_int;
-    let mut p: *mut libc::c_char = js_malloc(J, n) as *mut libc::c_char;
+pub unsafe extern "C" fn js_strdup(J: *mut js_State, s: *const libc::c_char) -> *mut libc::c_char {
+    let n: libc::c_int = (strlen(s)).wrapping_add(1 as libc::c_int as libc::c_ulong) as libc::c_int;
+    let p: *mut libc::c_char = js_malloc(J, n) as *mut libc::c_char;
     memcpy(
         p as *mut libc::c_void,
         s as *const libc::c_void,
@@ -17577,16 +17406,16 @@ pub unsafe extern "C" fn js_strdup(
     p
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_free(mut J: *mut js_State, mut ptr: *mut libc::c_void) {
+pub unsafe extern "C" fn js_free(J: *mut js_State, ptr: *mut libc::c_void) {
     ((*J).alloc).expect("non-null function pointer")((*J).actx, ptr, 0 as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_newmemstring(
-    mut J: *mut js_State,
-    mut s: *const libc::c_char,
-    mut n: libc::c_int,
+    J: *mut js_State,
+    s: *const libc::c_char,
+    n: libc::c_int,
 ) -> *mut js_String {
-    let mut v: *mut js_String =
+    let v: *mut js_String =
         js_malloc(J, 9 as libc::c_ulong as libc::c_int + n + 1 as libc::c_int) as *mut js_String;
     memcpy(
         ((*v).p).as_mut_ptr() as *mut libc::c_void,
@@ -17602,7 +17431,7 @@ pub unsafe extern "C" fn jsV_newmemstring(
     v
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushvalue(mut J: *mut js_State, mut v: js_Value) {
+pub unsafe extern "C" fn js_pushvalue(J: *mut js_State, v: js_Value) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17611,7 +17440,7 @@ pub unsafe extern "C" fn js_pushvalue(mut J: *mut js_State, mut v: js_Value) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushundefined(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_pushundefined(J: *mut js_State) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17621,7 +17450,7 @@ pub unsafe extern "C" fn js_pushundefined(mut J: *mut js_State) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushnull(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_pushnull(J: *mut js_State) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17630,7 +17459,7 @@ pub unsafe extern "C" fn js_pushnull(mut J: *mut js_State) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushboolean(mut J: *mut js_State, mut v: libc::c_int) {
+pub unsafe extern "C" fn js_pushboolean(J: *mut js_State, v: libc::c_int) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17640,7 +17469,7 @@ pub unsafe extern "C" fn js_pushboolean(mut J: *mut js_State, mut v: libc::c_int
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushnumber(mut J: *mut js_State, mut v: libc::c_double) {
+pub unsafe extern "C" fn js_pushnumber(J: *mut js_State, v: libc::c_double) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17650,7 +17479,7 @@ pub unsafe extern "C" fn js_pushnumber(mut J: *mut js_State, mut v: libc::c_doub
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushstring(mut J: *mut js_State, mut v: *const libc::c_char) {
+pub unsafe extern "C" fn js_pushstring(J: *mut js_State, mut v: *const libc::c_char) {
     let mut n: size_t = strlen(v);
     if n > ((1 as libc::c_int) << 28 as libc::c_int) as libc::c_ulong {
         js_rangeerror(
@@ -17690,7 +17519,7 @@ pub unsafe extern "C" fn js_pushstring(mut J: *mut js_State, mut v: *const libc:
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_pushlstring(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut v: *const libc::c_char,
     mut n: libc::c_int,
 ) {
@@ -17731,7 +17560,7 @@ pub unsafe extern "C" fn js_pushlstring(
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushliteral(mut J: *mut js_State, mut v: *const libc::c_char) {
+pub unsafe extern "C" fn js_pushliteral(J: *mut js_State, v: *const libc::c_char) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17742,7 +17571,7 @@ pub unsafe extern "C" fn js_pushliteral(mut J: *mut js_State, mut v: *const libc
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushobject(mut J: *mut js_State, mut v: *mut js_Object) {
+pub unsafe extern "C" fn js_pushobject(J: *mut js_State, v: *mut js_Object) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17753,11 +17582,11 @@ pub unsafe extern "C" fn js_pushobject(mut J: *mut js_State, mut v: *mut js_Obje
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushglobal(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_pushglobal(J: *mut js_State) {
     js_pushobject(J, (*J).G);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_currentfunction(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_currentfunction(J: *mut js_State) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -17772,7 +17601,7 @@ pub unsafe extern "C" fn js_currentfunction(mut J: *mut js_State) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_currentfunctiondata(mut J: *mut js_State) -> *mut libc::c_void {
+pub unsafe extern "C" fn js_currentfunctiondata(J: *mut js_State) -> *mut libc::c_void {
     if (*J).bot > 0 as libc::c_int {
         return (*(*((*J).stack).offset(((*J).bot - 1 as libc::c_int) as isize))
             .u
@@ -17783,7 +17612,7 @@ pub unsafe extern "C" fn js_currentfunctiondata(mut J: *mut js_State) -> *mut li
     }
     std::ptr::null_mut::<libc::c_void>()
 }
-unsafe extern "C" fn stackidx(mut J: *mut js_State, mut idx: libc::c_int) -> *mut js_Value {
+unsafe extern "C" fn stackidx(J: *mut js_State, mut idx: libc::c_int) -> *mut js_Value {
     static mut undefined: js_Value = js_Value {
         t: {
             C2RustUnnamed_6 {
@@ -17819,53 +17648,53 @@ unsafe extern "C" fn stackidx(mut J: *mut js_State, mut idx: libc::c_int) -> *mu
     ((*J).stack).offset(idx as isize)
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_tovalue(mut J: *mut js_State, mut idx: libc::c_int) -> *mut js_Value {
+pub unsafe extern "C" fn js_tovalue(J: *mut js_State, idx: libc::c_int) -> *mut js_Value {
     stackidx(J, idx)
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isdefined(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isdefined(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int != JS_TUNDEFINED as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isundefined(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isundefined(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int == JS_TUNDEFINED as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isnull(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isnull(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int == JS_TNULL as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isboolean(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isboolean(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int == JS_TBOOLEAN as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isnumber(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isnumber(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int == JS_TNUMBER as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isstring(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut t: js_Type = (*stackidx(J, idx)).t.type_0 as js_Type;
+pub unsafe extern "C" fn js_isstring(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let t: js_Type = (*stackidx(J, idx)).t.type_0 as js_Type;
     (t as libc::c_uint == JS_TSHRSTR as libc::c_int as libc::c_uint
         || t as libc::c_uint == JS_TLITSTR as libc::c_int as libc::c_uint
         || t as libc::c_uint == JS_TMEMSTR as libc::c_int as libc::c_uint) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isprimitive(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isprimitive(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int != JS_TOBJECT as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isobject(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_isobject(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     ((*stackidx(J, idx)).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_iscoercible(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_iscoercible(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     ((*v).t.type_0 as libc::c_int != JS_TUNDEFINED as libc::c_int
         && (*v).t.type_0 as libc::c_int != JS_TNULL as libc::c_int) as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_iscallable(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_iscallable(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int {
         return ((*(*v).u.object).type_0 as libc::c_uint
             == JS_CFUNCTION as libc::c_int as libc::c_uint
@@ -17876,26 +17705,26 @@ pub unsafe extern "C" fn js_iscallable(mut J: *mut js_State, mut idx: libc::c_in
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isarray(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_isarray(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     ((*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint)
         as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_isregexp(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_isregexp(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     ((*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CREGEXP as libc::c_int as libc::c_uint)
         as libc::c_int
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_isuserdata(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut tag: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    tag: *const libc::c_char,
 ) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CUSERDATA as libc::c_int as libc::c_uint
     {
@@ -17904,18 +17733,15 @@ pub unsafe extern "C" fn js_isuserdata(
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_iserror(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_iserror(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     ((*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CERROR as libc::c_int as libc::c_uint)
         as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_typeof(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> *const libc::c_char {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_typeof(J: *mut js_State, idx: libc::c_int) -> *const libc::c_char {
+    let v: *mut js_Value = stackidx(J, idx);
     match (*v).t.type_0 as libc::c_int {
         1 => b"undefined\0" as *const u8 as *const libc::c_char,
         2 => b"object\0" as *const u8 as *const libc::c_char,
@@ -17937,8 +17763,8 @@ pub unsafe extern "C" fn js_typeof(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_type(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_type(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
+    let v: *mut js_Value = stackidx(J, idx);
     match (*v).t.type_0 as libc::c_int {
         1 => JS_ISUNDEFINED as libc::c_int,
         2 => JS_ISNULL as libc::c_int,
@@ -17960,55 +17786,48 @@ pub unsafe extern "C" fn js_type(mut J: *mut js_State, mut idx: libc::c_int) -> 
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toboolean(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_toboolean(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     jsV_toboolean(J, stackidx(J, idx))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_tonumber(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_double {
+pub unsafe extern "C" fn js_tonumber(J: *mut js_State, idx: libc::c_int) -> libc::c_double {
     jsV_tonumber(J, stackidx(J, idx))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_tointeger(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_tointeger(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     jsV_numbertointeger(jsV_tonumber(J, stackidx(J, idx)))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toint32(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn js_toint32(J: *mut js_State, idx: libc::c_int) -> libc::c_int {
     jsV_numbertoint32(jsV_tonumber(J, stackidx(J, idx)))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_touint32(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_uint {
+pub unsafe extern "C" fn js_touint32(J: *mut js_State, idx: libc::c_int) -> libc::c_uint {
     jsV_numbertouint32(jsV_tonumber(J, stackidx(J, idx)))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toint16(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_short {
+pub unsafe extern "C" fn js_toint16(J: *mut js_State, idx: libc::c_int) -> libc::c_short {
     jsV_numbertoint16(jsV_tonumber(J, stackidx(J, idx)))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_touint16(mut J: *mut js_State, mut idx: libc::c_int) -> libc::c_ushort {
+pub unsafe extern "C" fn js_touint16(J: *mut js_State, idx: libc::c_int) -> libc::c_ushort {
     jsV_numbertouint16(jsV_tonumber(J, stackidx(J, idx)))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_tostring(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> *const libc::c_char {
+pub unsafe extern "C" fn js_tostring(J: *mut js_State, idx: libc::c_int) -> *const libc::c_char {
     jsV_tostring(J, stackidx(J, idx))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toobject(mut J: *mut js_State, mut idx: libc::c_int) -> *mut js_Object {
+pub unsafe extern "C" fn js_toobject(J: *mut js_State, idx: libc::c_int) -> *mut js_Object {
     jsV_toobject(J, stackidx(J, idx))
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toprimitive(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut hint: libc::c_int,
-) {
+pub unsafe extern "C" fn js_toprimitive(J: *mut js_State, idx: libc::c_int, hint: libc::c_int) {
     jsV_toprimitive(J, stackidx(J, idx), hint);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_toregexp(mut J: *mut js_State, mut idx: libc::c_int) -> *mut js_Regexp {
-    let mut v: *mut js_Value = stackidx(J, idx);
+pub unsafe extern "C" fn js_toregexp(J: *mut js_State, idx: libc::c_int) -> *mut js_Regexp {
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CREGEXP as libc::c_int as libc::c_uint
     {
@@ -18018,11 +17837,11 @@ pub unsafe extern "C" fn js_toregexp(mut J: *mut js_State, mut idx: libc::c_int)
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_touserdata(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut tag: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    tag: *const libc::c_char,
 ) -> *mut libc::c_void {
-    let mut v: *mut js_Value = stackidx(J, idx);
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TOBJECT as libc::c_int
         && (*(*v).u.object).type_0 as libc::c_uint == JS_CUSERDATA as libc::c_int as libc::c_uint
         && strcmp(tag, (*(*v).u.object).u.user.tag) == 0
@@ -18031,8 +17850,8 @@ pub unsafe extern "C" fn js_touserdata(
     }
     js_typeerror(J, b"not a %s\0" as *const u8 as *const libc::c_char, tag);
 }
-unsafe extern "C" fn jsR_tofunction(mut J: *mut js_State, mut idx: libc::c_int) -> *mut js_Object {
-    let mut v: *mut js_Value = stackidx(J, idx);
+unsafe extern "C" fn jsR_tofunction(J: *mut js_State, idx: libc::c_int) -> *mut js_Object {
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TUNDEFINED as libc::c_int
         || (*v).t.type_0 as libc::c_int == JS_TNULL as libc::c_int
     {
@@ -18048,11 +17867,11 @@ unsafe extern "C" fn jsR_tofunction(mut J: *mut js_State, mut idx: libc::c_int) 
     js_typeerror(J, b"not a function\0" as *const u8 as *const libc::c_char);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_gettop(mut J: *mut js_State) -> libc::c_int {
+pub unsafe extern "C" fn js_gettop(J: *mut js_State) -> libc::c_int {
     (*J).top - (*J).bot
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pop(mut J: *mut js_State, mut n: libc::c_int) {
+pub unsafe extern "C" fn js_pop(J: *mut js_State, n: libc::c_int) {
     (*J).top -= n;
     if (*J).top < (*J).bot {
         (*J).top = (*J).bot;
@@ -18060,7 +17879,7 @@ pub unsafe extern "C" fn js_pop(mut J: *mut js_State, mut n: libc::c_int) {
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_remove(mut J: *mut js_State, mut idx: libc::c_int) {
+pub unsafe extern "C" fn js_remove(J: *mut js_State, mut idx: libc::c_int) {
     idx = if idx < 0 as libc::c_int {
         (*J).top + idx
     } else {
@@ -18079,14 +17898,14 @@ pub unsafe extern "C" fn js_remove(mut J: *mut js_State, mut idx: libc::c_int) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_insert(mut J: *mut js_State, mut idx: libc::c_int) {
+pub unsafe extern "C" fn js_insert(J: *mut js_State, idx: libc::c_int) {
     js_error(
         J,
         b"not implemented yet\0" as *const u8 as *const libc::c_char,
     );
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_replace(mut J: *mut js_State, mut idx: libc::c_int) {
+pub unsafe extern "C" fn js_replace(J: *mut js_State, mut idx: libc::c_int) {
     idx = if idx < 0 as libc::c_int {
         (*J).top + idx
     } else {
@@ -18099,7 +17918,7 @@ pub unsafe extern "C" fn js_replace(mut J: *mut js_State, mut idx: libc::c_int) 
     *((*J).stack).offset(idx as isize) = *((*J).stack).offset((*J).top as isize);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_copy(mut J: *mut js_State, mut idx: libc::c_int) {
+pub unsafe extern "C" fn js_copy(J: *mut js_State, idx: libc::c_int) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -18108,7 +17927,7 @@ pub unsafe extern "C" fn js_copy(mut J: *mut js_State, mut idx: libc::c_int) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_dup(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_dup(J: *mut js_State) {
     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -18118,7 +17937,7 @@ pub unsafe extern "C" fn js_dup(mut J: *mut js_State) {
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_dup2(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_dup2(J: *mut js_State) {
     if (*J).top + 2 as libc::c_int >= 4096 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -18129,15 +17948,15 @@ pub unsafe extern "C" fn js_dup2(mut J: *mut js_State) {
     (*J).top += 2 as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot2(mut J: *mut js_State) {
-    let mut tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
+pub unsafe extern "C" fn js_rot2(J: *mut js_State) {
+    let tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize) =
         *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize) = tmp;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot3(mut J: *mut js_State) {
-    let mut tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
+pub unsafe extern "C" fn js_rot3(J: *mut js_State) {
+    let tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize) =
         *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize) =
@@ -18145,8 +17964,8 @@ pub unsafe extern "C" fn js_rot3(mut J: *mut js_State) {
     *((*J).stack).offset(((*J).top - 3 as libc::c_int) as isize) = tmp;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot4(mut J: *mut js_State) {
-    let mut tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
+pub unsafe extern "C" fn js_rot4(J: *mut js_State) {
+    let tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize) =
         *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize);
     *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize) =
@@ -18156,22 +17975,22 @@ pub unsafe extern "C" fn js_rot4(mut J: *mut js_State) {
     *((*J).stack).offset(((*J).top - 4 as libc::c_int) as isize) = tmp;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot2pop1(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_rot2pop1(J: *mut js_State) {
     *((*J).stack).offset(((*J).top - 2 as libc::c_int) as isize) =
         *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     (*J).top -= 1;
     (*J).top;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot3pop2(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_rot3pop2(J: *mut js_State) {
     *((*J).stack).offset(((*J).top - 3 as libc::c_int) as isize) =
         *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     (*J).top -= 2 as libc::c_int;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_rot(mut J: *mut js_State, mut n: libc::c_int) {
+pub unsafe extern "C" fn js_rot(J: *mut js_State, n: libc::c_int) {
     let mut i: libc::c_int = 0;
-    let mut tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
+    let tmp: js_Value = *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
     i = 1 as libc::c_int;
     while i < n {
         *((*J).stack).offset(((*J).top - i) as isize) =
@@ -18183,9 +18002,9 @@ pub unsafe extern "C" fn js_rot(mut J: *mut js_State, mut n: libc::c_int) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_isarrayindex(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut p: *const libc::c_char,
-    mut idx: *mut libc::c_int,
+    idx: *mut libc::c_int,
 ) -> libc::c_int {
     let mut n: libc::c_int = 0 as libc::c_int;
     if *p.offset(0 as libc::c_int as isize) as libc::c_int == 0 as libc::c_int {
@@ -18202,7 +18021,7 @@ pub unsafe extern "C" fn js_isarrayindex(
     while *p != 0 {
         let fresh66 = p;
         p = p.offset(1);
-        let mut c: libc::c_int = *fresh66 as libc::c_int;
+        let c: libc::c_int = *fresh66 as libc::c_int;
         if c >= '0' as i32 && c <= '9' as i32 {
             if n >= 2147483647 as libc::c_int / 10 as libc::c_int {
                 return 0 as libc::c_int;
@@ -18215,7 +18034,7 @@ pub unsafe extern "C" fn js_isarrayindex(
     *idx = n;
     1 as libc::c_int
 }
-unsafe extern "C" fn js_pushrune(mut J: *mut js_State, mut rune: Rune) {
+unsafe extern "C" fn js_pushrune(J: *mut js_State, mut rune: Rune) {
     let mut buf: [libc::c_char; 5] = [0; 5];
     if rune >= 0 as libc::c_int {
         buf[jsU_runetochar(buf.as_mut_ptr(), &mut rune) as usize] =
@@ -18226,7 +18045,7 @@ unsafe extern "C" fn js_pushrune(mut J: *mut js_State, mut rune: Rune) {
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsR_unflattenarray(mut J: *mut js_State, mut obj: *mut js_Object) {
+pub unsafe extern "C" fn jsR_unflattenarray(J: *mut js_State, obj: *mut js_Object) {
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint
         && (*obj).u.a.simple != 0
     {
@@ -18254,9 +18073,9 @@ pub unsafe extern "C" fn jsR_unflattenarray(mut J: *mut js_State, mut obj: *mut 
     }
 }
 unsafe extern "C" fn jsR_hasproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) -> libc::c_int {
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut k: libc::c_int = 0;
@@ -18331,18 +18150,18 @@ unsafe extern "C" fn jsR_hasproperty(
     0 as libc::c_int
 }
 unsafe extern "C" fn jsR_getproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) {
     if jsR_hasproperty(J, obj, name) == 0 {
         js_pushundefined(J);
     }
 }
 unsafe extern "C" fn jsR_hasindex(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut k: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    k: libc::c_int,
 ) -> libc::c_int {
     let mut buf: [libc::c_char; 32] = [0; 32];
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint
@@ -18356,22 +18175,18 @@ unsafe extern "C" fn jsR_hasindex(
     }
     jsR_hasproperty(J, obj, js_itoa(buf.as_mut_ptr(), k))
 }
-unsafe extern "C" fn jsR_getindex(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut k: libc::c_int,
-) {
+unsafe extern "C" fn jsR_getindex(J: *mut js_State, obj: *mut js_Object, k: libc::c_int) {
     if jsR_hasindex(J, obj, k) == 0 {
         js_pushundefined(J);
     }
 }
 unsafe extern "C" fn jsR_setarrayindex(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut k: libc::c_int,
-    mut value: *mut js_Value,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    k: libc::c_int,
+    value: *mut js_Value,
 ) {
-    let mut newlen: libc::c_int = k + 1 as libc::c_int;
+    let newlen: libc::c_int = k + 1 as libc::c_int;
     if (*obj).u.a.simple != 0 {
     } else {
         __assert_fail(
@@ -18479,20 +18294,20 @@ unsafe extern "C" fn jsR_setarrayindex(
     *((*obj).u.a.array).offset(k as isize) = *value;
 }
 unsafe extern "C" fn jsR_setproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
-    mut transient: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
+    transient: libc::c_int,
 ) {
     let mut current_block: u64;
-    let mut value: *mut js_Value = stackidx(J, -(1 as libc::c_int));
+    let value: *mut js_Value = stackidx(J, -(1 as libc::c_int));
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut k: libc::c_int = 0;
     let mut own: libc::c_int = 0;
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint {
         if strcmp(name, b"length\0" as *const u8 as *const libc::c_char) == 0 {
-            let mut rawlen: libc::c_double = jsV_tonumber(J, value);
-            let mut newlen: libc::c_int = jsV_numbertointeger(rawlen);
+            let rawlen: libc::c_double = jsV_tonumber(J, value);
+            let newlen: libc::c_int = jsV_numbertointeger(rawlen);
             if newlen as libc::c_double != rawlen || newlen < 0 as libc::c_int {
                 js_rangeerror(
                     J,
@@ -18636,10 +18451,10 @@ unsafe extern "C" fn jsR_setproperty(
     }
 }
 unsafe extern "C" fn jsR_setindex(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut k: libc::c_int,
-    mut transient: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    k: libc::c_int,
+    transient: libc::c_int,
 ) {
     let mut buf: [libc::c_char; 32] = [0; 32];
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint
@@ -18653,16 +18468,16 @@ unsafe extern "C" fn jsR_setindex(
     };
 }
 unsafe extern "C" fn jsR_defproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
-    mut atts: libc::c_int,
-    mut value: *mut js_Value,
-    mut getter: *mut js_Object,
-    mut setter: *mut js_Object,
-    mut throw: libc::c_int,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
+    atts: libc::c_int,
+    value: *mut js_Value,
+    getter: *mut js_Object,
+    setter: *mut js_Object,
+    throw: libc::c_int,
 ) {
-    let mut current_block: u64;
+    let current_block: u64;
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
     let mut k: libc::c_int = 0;
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint {
@@ -18762,9 +18577,9 @@ unsafe extern "C" fn jsR_defproperty(
     }
 }
 unsafe extern "C" fn jsR_delproperty(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    obj: *mut js_Object,
+    name: *const libc::c_char,
 ) -> libc::c_int {
     let mut current_block: u64;
     let mut ref_0: *mut js_Property = std::ptr::null_mut::<js_Property>();
@@ -18843,11 +18658,7 @@ unsafe extern "C" fn jsR_delproperty(
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn jsR_delindex(
-    mut J: *mut js_State,
-    mut obj: *mut js_Object,
-    mut k: libc::c_int,
-) {
+unsafe extern "C" fn jsR_delindex(J: *mut js_State, obj: *mut js_Object, k: libc::c_int) {
     let mut buf: [libc::c_char; 32] = [0; 32];
     if (*obj).type_0 as libc::c_uint == JS_CARRAY as libc::c_int as libc::c_uint
         && (*obj).u.a.simple != 0
@@ -18859,8 +18670,8 @@ unsafe extern "C" fn jsR_delindex(
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_ref(mut J: *mut js_State) -> *const libc::c_char {
-    let mut v: *mut js_Value = stackidx(J, -(1 as libc::c_int));
+pub unsafe extern "C" fn js_ref(J: *mut js_State) -> *const libc::c_char {
+    let v: *mut js_Value = stackidx(J, -(1 as libc::c_int));
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut buf: [libc::c_char; 32] = [0; 32];
     match (*v).t.type_0 as libc::c_int {
@@ -18900,36 +18711,36 @@ pub unsafe extern "C" fn js_ref(mut J: *mut js_State) -> *const libc::c_char {
     s
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_unref(mut J: *mut js_State, mut ref_0: *const libc::c_char) {
+pub unsafe extern "C" fn js_unref(J: *mut js_State, ref_0: *const libc::c_char) {
     js_delregistry(J, ref_0);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_getregistry(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_getregistry(J: *mut js_State, name: *const libc::c_char) {
     jsR_getproperty(J, (*J).R, name);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setregistry(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_setregistry(J: *mut js_State, name: *const libc::c_char) {
     jsR_setproperty(J, (*J).R, name, 0 as libc::c_int);
     js_pop(J, 1 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_delregistry(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_delregistry(J: *mut js_State, name: *const libc::c_char) {
     jsR_delproperty(J, (*J).R, name);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_getglobal(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_getglobal(J: *mut js_State, name: *const libc::c_char) {
     jsR_getproperty(J, (*J).G, name);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setglobal(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_setglobal(J: *mut js_State, name: *const libc::c_char) {
     jsR_setproperty(J, (*J).G, name, 0 as libc::c_int);
     js_pop(J, 1 as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_defglobal(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut atts: libc::c_int,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    atts: libc::c_int,
 ) {
     jsR_defproperty(
         J,
@@ -18944,22 +18755,22 @@ pub unsafe extern "C" fn js_defglobal(
     js_pop(J, 1 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_delglobal(mut J: *mut js_State, mut name: *const libc::c_char) {
+pub unsafe extern "C" fn js_delglobal(J: *mut js_State, name: *const libc::c_char) {
     jsR_delproperty(J, (*J).G, name);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_getproperty(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
 ) {
     jsR_getproperty(J, js_toobject(J, idx), name);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_setproperty(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
 ) {
     jsR_setproperty(
         J,
@@ -18971,10 +18782,10 @@ pub unsafe extern "C" fn js_setproperty(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_defproperty(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
-    mut atts: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
+    atts: libc::c_int,
 ) {
     jsR_defproperty(
         J,
@@ -18990,18 +18801,18 @@ pub unsafe extern "C" fn js_defproperty(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_delproperty(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
 ) {
     jsR_delproperty(J, js_toobject(J, idx), name);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_defaccessor(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
-    mut atts: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
+    atts: libc::c_int,
 ) {
     jsR_defproperty(
         J,
@@ -19017,34 +18828,26 @@ pub unsafe extern "C" fn js_defaccessor(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_hasproperty(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut name: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    name: *const libc::c_char,
 ) -> libc::c_int {
     jsR_hasproperty(J, js_toobject(J, idx), name)
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_getindex(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut i: libc::c_int,
-) {
+pub unsafe extern "C" fn js_getindex(J: *mut js_State, idx: libc::c_int, i: libc::c_int) {
     jsR_getindex(J, js_toobject(J, idx), i);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_hasindex(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut i: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    i: libc::c_int,
 ) -> libc::c_int {
     jsR_hasindex(J, js_toobject(J, idx), i)
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setindex(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut i: libc::c_int,
-) {
+pub unsafe extern "C" fn js_setindex(J: *mut js_State, idx: libc::c_int, i: libc::c_int) {
     jsR_setindex(
         J,
         js_toobject(J, idx),
@@ -19054,35 +18857,27 @@ pub unsafe extern "C" fn js_setindex(
     js_pop(J, 1 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_delindex(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut i: libc::c_int,
-) {
+pub unsafe extern "C" fn js_delindex(J: *mut js_State, idx: libc::c_int, i: libc::c_int) {
     jsR_delindex(J, js_toobject(J, idx), i);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pushiterator(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut own: libc::c_int,
-) {
+pub unsafe extern "C" fn js_pushiterator(J: *mut js_State, idx: libc::c_int, own: libc::c_int) {
     js_pushobject(J, jsV_newiterator(J, js_toobject(J, idx), own));
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_nextiterator(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
 ) -> *const libc::c_char {
     jsV_nextiterator(J, js_toobject(J, idx))
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsR_newenvironment(
-    mut J: *mut js_State,
-    mut vars: *mut js_Object,
-    mut outer: *mut js_Environment,
+    J: *mut js_State,
+    vars: *mut js_Object,
+    outer: *mut js_Environment,
 ) -> *mut js_Environment {
-    let mut E: *mut js_Environment = js_malloc(
+    let E: *mut js_Environment = js_malloc(
         J,
         ::core::mem::size_of::<js_Environment>() as libc::c_ulong as libc::c_int,
     ) as *mut js_Environment;
@@ -19095,11 +18890,7 @@ pub unsafe extern "C" fn jsR_newenvironment(
     (*E).variables = vars;
     E
 }
-unsafe extern "C" fn js_initvar(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut idx: libc::c_int,
-) {
+unsafe extern "C" fn js_initvar(J: *mut js_State, name: *const libc::c_char, idx: libc::c_int) {
     jsR_defproperty(
         J,
         (*(*J).E).variables,
@@ -19111,10 +18902,10 @@ unsafe extern "C" fn js_initvar(
         0 as libc::c_int,
     );
 }
-unsafe extern "C" fn js_hasvar(mut J: *mut js_State, mut name: *const libc::c_char) -> libc::c_int {
+unsafe extern "C" fn js_hasvar(J: *mut js_State, name: *const libc::c_char) -> libc::c_int {
     let mut E: *mut js_Environment = (*J).E;
     loop {
-        let mut ref_0: *mut js_Property = jsV_getproperty(J, (*E).variables, name);
+        let ref_0: *mut js_Property = jsV_getproperty(J, (*E).variables, name);
         if !ref_0.is_null() {
             if !((*ref_0).getter).is_null() {
                 js_pushobject(J, (*ref_0).getter);
@@ -19132,10 +18923,10 @@ unsafe extern "C" fn js_hasvar(mut J: *mut js_State, mut name: *const libc::c_ch
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn js_setvar(mut J: *mut js_State, mut name: *const libc::c_char) {
+unsafe extern "C" fn js_setvar(J: *mut js_State, name: *const libc::c_char) {
     let mut E: *mut js_Environment = (*J).E;
     loop {
-        let mut ref_0: *mut js_Property = jsV_getproperty(J, (*E).variables, name);
+        let ref_0: *mut js_Property = jsV_getproperty(J, (*E).variables, name);
         if !ref_0.is_null() {
             if !((*ref_0).setter).is_null() {
                 js_pushobject(J, (*ref_0).setter);
@@ -19170,10 +18961,10 @@ unsafe extern "C" fn js_setvar(mut J: *mut js_State, mut name: *const libc::c_ch
     }
     jsR_setproperty(J, (*J).G, name, 0 as libc::c_int);
 }
-unsafe extern "C" fn js_delvar(mut J: *mut js_State, mut name: *const libc::c_char) -> libc::c_int {
+unsafe extern "C" fn js_delvar(J: *mut js_State, name: *const libc::c_char) -> libc::c_int {
     let mut E: *mut js_Environment = (*J).E;
     loop {
-        let mut ref_0: *mut js_Property = jsV_getownproperty(J, (*E).variables, name);
+        let ref_0: *mut js_Property = jsV_getownproperty(J, (*E).variables, name);
         if !ref_0.is_null() {
             if (*ref_0).atts & JS_DONTCONF as libc::c_int != 0 {
                 if (*J).strict != 0 {
@@ -19195,7 +18986,7 @@ unsafe extern "C" fn js_delvar(mut J: *mut js_State, mut name: *const libc::c_ch
     }
     jsR_delproperty(J, (*J).G, name)
 }
-unsafe extern "C" fn jsR_savescope(mut J: *mut js_State, mut newE: *mut js_Environment) {
+unsafe extern "C" fn jsR_savescope(J: *mut js_State, newE: *mut js_Environment) {
     if (*J).envtop + 1 as libc::c_int >= 1024 as libc::c_int {
         js_stackoverflow(J);
     }
@@ -19204,15 +18995,15 @@ unsafe extern "C" fn jsR_savescope(mut J: *mut js_State, mut newE: *mut js_Envir
     (*J).envstack[fresh68 as usize] = (*J).E;
     (*J).E = newE;
 }
-unsafe extern "C" fn jsR_restorescope(mut J: *mut js_State) {
+unsafe extern "C" fn jsR_restorescope(J: *mut js_State) {
     (*J).envtop -= 1;
     (*J).E = (*J).envstack[(*J).envtop as usize];
 }
 unsafe extern "C" fn jsR_calllwfunction(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut n: libc::c_int,
-    mut F: *mut js_Function,
-    mut scope: *mut js_Environment,
+    F: *mut js_Function,
+    scope: *mut js_Environment,
 ) {
     let mut v: js_Value = js_Value {
         t: C2RustUnnamed_6 {
@@ -19240,9 +19031,9 @@ unsafe extern "C" fn jsR_calllwfunction(
     jsR_restorescope(J);
 }
 unsafe extern "C" fn jsR_callfunction(
-    mut J: *mut js_State,
-    mut n: libc::c_int,
-    mut F: *mut js_Function,
+    J: *mut js_State,
+    n: libc::c_int,
+    F: *mut js_Function,
     mut scope: *mut js_Environment,
 ) {
     let mut v: js_Value = js_Value {
@@ -19312,10 +19103,10 @@ unsafe extern "C" fn jsR_callfunction(
     jsR_restorescope(J);
 }
 unsafe extern "C" fn jsR_callscript(
-    mut J: *mut js_State,
-    mut n: libc::c_int,
-    mut F: *mut js_Function,
-    mut scope: *mut js_Environment,
+    J: *mut js_State,
+    n: libc::c_int,
+    F: *mut js_Function,
+    scope: *mut js_Environment,
 ) {
     let mut v: js_Value = js_Value {
         t: C2RustUnnamed_6 {
@@ -19348,10 +19139,10 @@ unsafe extern "C" fn jsR_callscript(
     }
 }
 unsafe extern "C" fn jsR_callcfunction(
-    mut J: *mut js_State,
-    mut n: libc::c_int,
-    mut min: libc::c_int,
-    mut F: js_CFunction,
+    J: *mut js_State,
+    n: libc::c_int,
+    min: libc::c_int,
+    F: js_CFunction,
 ) {
     let mut save_top: libc::c_int = 0;
     let mut i: libc::c_int = 0;
@@ -19381,10 +19172,10 @@ unsafe extern "C" fn jsR_callcfunction(
     };
 }
 unsafe extern "C" fn jsR_pushtrace(
-    mut J: *mut js_State,
-    mut name: *const libc::c_char,
-    mut file: *const libc::c_char,
-    mut line: libc::c_int,
+    J: *mut js_State,
+    name: *const libc::c_char,
+    file: *const libc::c_char,
+    line: libc::c_int,
 ) {
     if (*J).tracetop + 1 as libc::c_int == 1024 as libc::c_int {
         js_error(
@@ -19399,7 +19190,7 @@ unsafe extern "C" fn jsR_pushtrace(
     (*J).trace[(*J).tracetop as usize].line = line;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_call(mut J: *mut js_State, mut n: libc::c_int) {
+pub unsafe extern "C" fn js_call(J: *mut js_State, n: libc::c_int) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut savebot: libc::c_int = 0;
     if n < 0 as libc::c_int {
@@ -19456,7 +19247,7 @@ pub unsafe extern "C" fn js_call(mut J: *mut js_State, mut n: libc::c_int) {
     (*J).bot = savebot;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_construct(mut J: *mut js_State, mut n: libc::c_int) {
+pub unsafe extern "C" fn js_construct(J: *mut js_State, n: libc::c_int) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut prototype: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut newobj: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -19471,7 +19262,7 @@ pub unsafe extern "C" fn js_construct(mut J: *mut js_State, mut n: libc::c_int) 
     if (*obj).type_0 as libc::c_uint == JS_CCFUNCTION as libc::c_int as libc::c_uint
         && ((*obj).u.c.constructor).is_some()
     {
-        let mut savebot: libc::c_int = (*J).bot;
+        let savebot: libc::c_int = (*J).bot;
         js_pushnull(J);
         if n > 0 as libc::c_int {
             js_rot(J, n + 1 as libc::c_int);
@@ -19515,7 +19306,7 @@ pub unsafe extern "C" fn js_construct(mut J: *mut js_State, mut n: libc::c_int) 
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_eval(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_eval(J: *mut js_State) {
     if js_isstring(J, -(1 as libc::c_int)) == 0 {
         return;
     }
@@ -19529,8 +19320,8 @@ pub unsafe extern "C" fn js_eval(mut J: *mut js_State) {
     js_call(J, 0 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pconstruct(mut J: *mut js_State, mut n: libc::c_int) -> libc::c_int {
-    let mut savetop: libc::c_int = (*J).top - n - 2 as libc::c_int;
+pub unsafe extern "C" fn js_pconstruct(J: *mut js_State, n: libc::c_int) -> libc::c_int {
+    let savetop: libc::c_int = (*J).top - n - 2 as libc::c_int;
     if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
         *((*J).stack).offset(savetop as isize) =
             *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
@@ -19542,8 +19333,8 @@ pub unsafe extern "C" fn js_pconstruct(mut J: *mut js_State, mut n: libc::c_int)
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_pcall(mut J: *mut js_State, mut n: libc::c_int) -> libc::c_int {
-    let mut savetop: libc::c_int = (*J).top - n - 2 as libc::c_int;
+pub unsafe extern "C" fn js_pcall(J: *mut js_State, n: libc::c_int) -> libc::c_int {
+    let savetop: libc::c_int = (*J).top - n - 2 as libc::c_int;
     if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
         *((*J).stack).offset(savetop as isize) =
             *((*J).stack).offset(((*J).top - 1 as libc::c_int) as isize);
@@ -19556,8 +19347,8 @@ pub unsafe extern "C" fn js_pcall(mut J: *mut js_State, mut n: libc::c_int) -> l
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_savetrypc(
-    mut J: *mut js_State,
-    mut pc: *mut js_Instruction,
+    J: *mut js_State,
+    pc: *mut js_Instruction,
 ) -> *mut libc::c_void {
     if (*J).trytop == 64 as libc::c_int {
         js_trystackoverflow(J);
@@ -19574,7 +19365,7 @@ pub unsafe extern "C" fn js_savetrypc(
     ((*J).trybuf[fresh69 as usize].buf).as_mut_ptr() as *mut libc::c_void
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_savetry(mut J: *mut js_State) -> *mut libc::c_void {
+pub unsafe extern "C" fn js_savetry(J: *mut js_State) -> *mut libc::c_void {
     if (*J).trytop == 64 as libc::c_int {
         js_trystackoverflow(J);
     }
@@ -19590,7 +19381,7 @@ pub unsafe extern "C" fn js_savetry(mut J: *mut js_State) -> *mut libc::c_void {
     ((*J).trybuf[fresh70 as usize].buf).as_mut_ptr() as *mut libc::c_void
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_endtry(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_endtry(J: *mut js_State) {
     if (*J).trytop == 0 as libc::c_int {
         js_error(
             J,
@@ -19601,9 +19392,9 @@ pub unsafe extern "C" fn js_endtry(mut J: *mut js_State) {
     (*J).trytop;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_throw(mut J: *mut js_State) -> ! {
+pub unsafe extern "C" fn js_throw(J: *mut js_State) -> ! {
     if (*J).trytop > 0 as libc::c_int {
-        let mut v: js_Value = *stackidx(J, -(1 as libc::c_int));
+        let v: js_Value = *stackidx(J, -(1 as libc::c_int));
         (*J).trytop -= 1;
         (*J).trytop;
         (*J).E = (*J).trybuf[(*J).trytop as usize].E;
@@ -19623,7 +19414,7 @@ pub unsafe extern "C" fn js_throw(mut J: *mut js_State) -> ! {
     }
     abort();
 }
-unsafe extern "C" fn js_dumpvalue(mut J: *mut js_State, mut v: js_Value) {
+unsafe extern "C" fn js_dumpvalue(J: *mut js_State, mut v: js_Value) {
     match v.t.type_0 as libc::c_int {
         1 => {
             printf(b"undefined\0" as *const u8 as *const libc::c_char);
@@ -19746,14 +19537,14 @@ unsafe extern "C" fn js_dumpvalue(mut J: *mut js_State, mut v: js_Value) {
         _ => {}
     };
 }
-unsafe extern "C" fn js_stacktrace(mut J: *mut js_State) {
+unsafe extern "C" fn js_stacktrace(J: *mut js_State) {
     let mut n: libc::c_int = 0;
     printf(b"stack trace:\n\0" as *const u8 as *const libc::c_char);
     n = (*J).tracetop;
     while n >= 0 as libc::c_int {
-        let mut name: *const libc::c_char = (*J).trace[n as usize].name;
-        let mut file: *const libc::c_char = (*J).trace[n as usize].file;
-        let mut line: libc::c_int = (*J).trace[n as usize].line;
+        let name: *const libc::c_char = (*J).trace[n as usize].name;
+        let file: *const libc::c_char = (*J).trace[n as usize].file;
+        let line: libc::c_int = (*J).trace[n as usize].line;
         if line > 0 as libc::c_int {
             if *name.offset(0 as libc::c_int as isize) != 0 {
                 printf(
@@ -19780,7 +19571,7 @@ unsafe extern "C" fn js_stacktrace(mut J: *mut js_State) {
         n;
     }
 }
-unsafe extern "C" fn js_dumpstack(mut J: *mut js_State) {
+unsafe extern "C" fn js_dumpstack(J: *mut js_State) {
     let mut i: libc::c_int = 0;
     printf(b"stack {\n\0" as *const u8 as *const libc::c_char);
     i = 0 as libc::c_int;
@@ -19799,27 +19590,27 @@ unsafe extern "C" fn js_dumpstack(mut J: *mut js_State) {
     printf(b"}\n\0" as *const u8 as *const libc::c_char);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_trap(mut J: *mut js_State, mut pc: libc::c_int) {
+pub unsafe extern "C" fn js_trap(J: *mut js_State, pc: libc::c_int) {
     js_dumpstack(J);
     js_stacktrace(J);
 }
 unsafe extern "C" fn jsR_isindex(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut k: *mut libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    k: *mut libc::c_int,
 ) -> libc::c_int {
-    let mut v: *mut js_Value = stackidx(J, idx);
+    let v: *mut js_Value = stackidx(J, idx);
     if (*v).t.type_0 as libc::c_int == JS_TNUMBER as libc::c_int {
         *k = (*v).u.number as libc::c_int;
         return (*k as libc::c_double == (*v).u.number && *k >= 0 as libc::c_int) as libc::c_int;
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn jsR_run(mut J: *mut js_State, mut F: *mut js_Function) {
-    let mut FT: *mut *mut js_Function = (*F).funtab;
-    let mut VT: *mut *const libc::c_char = ((*F).vartab).offset(-(1 as libc::c_int as isize));
-    let mut lightweight: libc::c_int = (*F).lightweight;
-    let mut pcstart: *mut js_Instruction = (*F).code;
+unsafe extern "C" fn jsR_run(J: *mut js_State, F: *mut js_Function) {
+    let FT: *mut *mut js_Function = (*F).funtab;
+    // let mut VT: *mut *const libc::c_char = ((*F).vartab).offset(-1);
+    let lightweight: libc::c_int = (*F).lightweight;
+    let pcstart: *mut js_Instruction = (*F).code;
     let mut pc: *mut js_Instruction = (*F).code;
     let mut opcode: js_OpCode = OP_POP;
     let mut offset: libc::c_int = 0;
@@ -19951,6 +19742,7 @@ unsafe extern "C" fn jsR_run(mut J: *mut js_State, mut F: *mut js_Function) {
                 js_currentfunction(J);
             }
             19 => {
+                let VT: *mut *const libc::c_char = ((*F).vartab).offset(-1);
                 if lightweight != 0 {
                     if (*J).top + 1 as libc::c_int >= 4096 as libc::c_int {
                         js_stackoverflow(J);
@@ -19975,6 +19767,7 @@ unsafe extern "C" fn jsR_run(mut J: *mut js_State, mut F: *mut js_Function) {
                 }
             }
             20 => {
+                let VT: *mut *const libc::c_char = ((*F).vartab).offset(-1);
                 if lightweight != 0 {
                     let fresh79 = pc;
                     pc = pc.offset(1);
@@ -19987,6 +19780,7 @@ unsafe extern "C" fn jsR_run(mut J: *mut js_State, mut F: *mut js_Function) {
                 }
             }
             21 => {
+                let VT: *mut *const libc::c_char = ((*F).vartab).offset(-1);
                 if lightweight != 0 {
                     pc = pc.offset(1);
                     pc;
@@ -20489,7 +20283,7 @@ unsafe extern "C" fn jsR_run(mut J: *mut js_State, mut F: *mut js_Function) {
         }
     }
 }
-unsafe extern "C" fn js_ptry(mut J: *mut js_State) -> libc::c_int {
+unsafe extern "C" fn js_ptry(J: *mut js_State) -> libc::c_int {
     if (*J).trytop == 64 as libc::c_int {
         (*((*J).stack).offset((*J).top as isize)).t.type_0 =
             JS_TLITSTR as libc::c_int as libc::c_char;
@@ -20502,9 +20296,9 @@ unsafe extern "C" fn js_ptry(mut J: *mut js_State) -> libc::c_int {
     0 as libc::c_int
 }
 unsafe extern "C" fn js_defaultalloc(
-    mut actx: *mut libc::c_void,
-    mut ptr: *mut libc::c_void,
-    mut size: libc::c_int,
+    actx: *mut libc::c_void,
+    ptr: *mut libc::c_void,
+    size: libc::c_int,
 ) -> *mut libc::c_void {
     if size == 0 as libc::c_int {
         free(ptr);
@@ -20512,11 +20306,11 @@ unsafe extern "C" fn js_defaultalloc(
     }
     realloc(ptr, size as size_t)
 }
-unsafe extern "C" fn js_defaultreport(mut J: *mut js_State, mut message: *const libc::c_char) {
+unsafe extern "C" fn js_defaultreport(J: *mut js_State, message: *const libc::c_char) {
     fputs(message, stderr);
     fputc('\n' as i32, stderr);
 }
-unsafe extern "C" fn js_defaultpanic(mut J: *mut js_State) {
+unsafe extern "C" fn js_defaultpanic(J: *mut js_State) {
     js_report(
         J,
         b"uncaught exception\0" as *const u8 as *const libc::c_char,
@@ -20524,9 +20318,9 @@ unsafe extern "C" fn js_defaultpanic(mut J: *mut js_State) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_ploadstring(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
 ) -> libc::c_int {
     if js_ptry(J) != 0 {
         return 1 as libc::c_int;
@@ -20540,8 +20334,8 @@ pub unsafe extern "C" fn js_ploadstring(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_ploadfile(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
 ) -> libc::c_int {
     if js_ptry(J) != 0 {
         return 1 as libc::c_int;
@@ -20555,9 +20349,9 @@ pub unsafe extern "C" fn js_ploadfile(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_trystring(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut error: *const libc::c_char,
+    J: *mut js_State,
+    idx: libc::c_int,
+    error: *const libc::c_char,
 ) -> *const libc::c_char {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     if js_ptry(J) != 0 {
@@ -20574,9 +20368,9 @@ pub unsafe extern "C" fn js_trystring(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_trynumber(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut error: libc::c_double,
+    J: *mut js_State,
+    idx: libc::c_int,
+    error: libc::c_double,
 ) -> libc::c_double {
     let mut v: libc::c_double = 0.;
     if js_ptry(J) != 0 {
@@ -20593,9 +20387,9 @@ pub unsafe extern "C" fn js_trynumber(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_tryinteger(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut error: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    error: libc::c_int,
 ) -> libc::c_int {
     let mut v: libc::c_int = 0;
     if js_ptry(J) != 0 {
@@ -20612,9 +20406,9 @@ pub unsafe extern "C" fn js_tryinteger(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_tryboolean(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-    mut error: libc::c_int,
+    J: *mut js_State,
+    idx: libc::c_int,
+    error: libc::c_int,
 ) -> libc::c_int {
     let mut v: libc::c_int = 0;
     if js_ptry(J) != 0 {
@@ -20630,10 +20424,10 @@ pub unsafe extern "C" fn js_tryboolean(
     v
 }
 unsafe extern "C" fn js_loadstringx(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
-    mut iseval: libc::c_int,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
+    iseval: libc::c_int,
 ) {
     let mut P: *mut js_Ast = std::ptr::null_mut::<js_Ast>();
     let mut F: *mut js_Function = std::ptr::null_mut::<js_Function>();
@@ -20669,22 +20463,22 @@ unsafe extern "C" fn js_loadstringx(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_loadeval(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
 ) {
     js_loadstringx(J, filename, source, 1 as libc::c_int);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_loadstring(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-    mut source: *const libc::c_char,
+    J: *mut js_State,
+    filename: *const libc::c_char,
+    source: *const libc::c_char,
 ) {
     js_loadstringx(J, filename, source, 0 as libc::c_int);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_loadfile(mut J: *mut js_State, mut filename: *const libc::c_char) {
+pub unsafe extern "C" fn js_loadfile(J: *mut js_State, filename: *const libc::c_char) {
     let mut f: *mut FILE = std::ptr::null_mut::<FILE>();
     let mut s: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut p: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
@@ -20771,10 +20565,7 @@ pub unsafe extern "C" fn js_loadfile(mut J: *mut js_State, mut filename: *const 
     js_endtry(J);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_dostring(
-    mut J: *mut js_State,
-    mut source: *const libc::c_char,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_dostring(J: *mut js_State, source: *const libc::c_char) -> libc::c_int {
     if js_ptry(J) != 0 {
         js_report(
             J,
@@ -20803,10 +20594,7 @@ pub unsafe extern "C" fn js_dostring(
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_dofile(
-    mut J: *mut js_State,
-    mut filename: *const libc::c_char,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_dofile(J: *mut js_State, filename: *const libc::c_char) -> libc::c_int {
     if js_ptry(J) != 0 {
         js_report(
             J,
@@ -20835,34 +20623,34 @@ pub unsafe extern "C" fn js_dofile(
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_atpanic(mut J: *mut js_State, mut panic: js_Panic) -> js_Panic {
-    let mut old: js_Panic = (*J).panic;
+pub unsafe extern "C" fn js_atpanic(J: *mut js_State, panic: js_Panic) -> js_Panic {
+    let old: js_Panic = (*J).panic;
     (*J).panic = panic;
     old
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_report(mut J: *mut js_State, mut message: *const libc::c_char) {
+pub unsafe extern "C" fn js_report(J: *mut js_State, message: *const libc::c_char) {
     if ((*J).report).is_some() {
         ((*J).report).expect("non-null function pointer")(J, message);
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setreport(mut J: *mut js_State, mut report: js_Report) {
+pub unsafe extern "C" fn js_setreport(J: *mut js_State, report: js_Report) {
     (*J).report = report;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_setcontext(mut J: *mut js_State, mut uctx: *mut libc::c_void) {
+pub unsafe extern "C" fn js_setcontext(J: *mut js_State, uctx: *mut libc::c_void) {
     (*J).uctx = uctx;
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_getcontext(mut J: *mut js_State) -> *mut libc::c_void {
+pub unsafe extern "C" fn js_getcontext(J: *mut js_State) -> *mut libc::c_void {
     (*J).uctx
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newstate(
     mut alloc: js_Alloc,
-    mut actx: *mut libc::c_void,
-    mut flags: libc::c_int,
+    actx: *mut libc::c_void,
+    flags: libc::c_int,
 ) -> *mut js_State {
     let mut J: *mut js_State = std::ptr::null_mut::<js_State>();
     if ::core::mem::size_of::<js_Value>() as libc::c_ulong == 16 as libc::c_int as libc::c_ulong {
@@ -20980,22 +20768,19 @@ pub unsafe extern "C" fn js_newstate(
     J
 }
 unsafe extern "C" fn js_doregexec(
-    mut J: *mut js_State,
-    mut prog: *mut Reprog,
-    mut string: *const libc::c_char,
-    mut sub: *mut Resub,
-    mut eflags: libc::c_int,
+    J: *mut js_State,
+    prog: *mut Reprog,
+    string: *const libc::c_char,
+    sub: *mut Resub,
+    eflags: libc::c_int,
 ) -> libc::c_int {
-    let mut result: libc::c_int = js_regexec(prog, string, sub, eflags);
+    let result: libc::c_int = js_regexec(prog, string, sub, eflags);
     if result < 0 as libc::c_int {
         js_error(J, b"regexec failed\0" as *const u8 as *const libc::c_char);
     }
     result
 }
-unsafe extern "C" fn checkstring(
-    mut J: *mut js_State,
-    mut idx: libc::c_int,
-) -> *const libc::c_char {
+unsafe extern "C" fn checkstring(J: *mut js_State, idx: libc::c_int) -> *const libc::c_char {
     if js_iscoercible(J, idx) == 0 {
         js_typeerror(
             J,
@@ -21006,7 +20791,7 @@ unsafe extern "C" fn checkstring(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_runeat(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut s: *const libc::c_char,
     mut i: libc::c_int,
 ) -> libc::c_int {
@@ -21071,7 +20856,7 @@ pub unsafe extern "C" fn js_utflen(mut s: *const libc::c_char) -> libc::c_int {
 #[no_mangle]
 pub unsafe extern "C" fn js_utfptrtoidx(
     mut s: *const libc::c_char,
-    mut p: *const libc::c_char,
+    p: *const libc::c_char,
 ) -> libc::c_int {
     let mut rune: Rune = 0;
     let mut i: libc::c_int = 0 as libc::c_int;
@@ -21090,7 +20875,7 @@ pub unsafe extern "C" fn js_utfptrtoidx(
     }
     i
 }
-unsafe extern "C" fn jsB_new_String(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_new_String(J: *mut js_State) {
     js_newstring(
         J,
         if js_gettop(J) > 1 as libc::c_int {
@@ -21100,7 +20885,7 @@ unsafe extern "C" fn jsB_new_String(mut J: *mut js_State) {
         },
     );
 }
-unsafe extern "C" fn jsB_String(mut J: *mut js_State) {
+unsafe extern "C" fn jsB_String(J: *mut js_State) {
     js_pushstring(
         J,
         if js_gettop(J) > 1 as libc::c_int {
@@ -21110,24 +20895,24 @@ unsafe extern "C" fn jsB_String(mut J: *mut js_State) {
         },
     );
 }
-unsafe extern "C" fn Sp_toString(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Sp_toString(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if (*self_0).type_0 as libc::c_uint != JS_CSTRING as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a string\0" as *const u8 as *const libc::c_char);
     }
     js_pushstring(J, (*self_0).u.s.string);
 }
-unsafe extern "C" fn Sp_valueOf(mut J: *mut js_State) {
-    let mut self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
+unsafe extern "C" fn Sp_valueOf(J: *mut js_State) {
+    let self_0: *mut js_Object = js_toobject(J, 0 as libc::c_int);
     if (*self_0).type_0 as libc::c_uint != JS_CSTRING as libc::c_int as libc::c_uint {
         js_typeerror(J, b"not a string\0" as *const u8 as *const libc::c_char);
     }
     js_pushstring(J, (*self_0).u.s.string);
 }
-unsafe extern "C" fn Sp_charAt(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_charAt(J: *mut js_State) {
     let mut buf: [libc::c_char; 5] = [0; 5];
-    let mut s: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut pos: libc::c_int = js_tointeger(J, 1 as libc::c_int);
+    let s: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let pos: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut rune: Rune = js_runeat(J, s, pos);
     if rune >= 0 as libc::c_int {
         buf[jsU_runetochar(buf.as_mut_ptr(), &mut rune) as usize] =
@@ -21137,19 +20922,19 @@ unsafe extern "C" fn Sp_charAt(mut J: *mut js_State) {
         js_pushliteral(J, b"\0" as *const u8 as *const libc::c_char);
     };
 }
-unsafe extern "C" fn Sp_charCodeAt(mut J: *mut js_State) {
-    let mut s: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut pos: libc::c_int = js_tointeger(J, 1 as libc::c_int);
-    let mut rune: Rune = js_runeat(J, s, pos);
+unsafe extern "C" fn Sp_charCodeAt(J: *mut js_State) {
+    let s: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let pos: libc::c_int = js_tointeger(J, 1 as libc::c_int);
+    let rune: Rune = js_runeat(J, s, pos);
     if rune >= 0 as libc::c_int {
         js_pushnumber(J, rune as libc::c_double);
     } else {
         js_pushnumber(J, ::core::f32::NAN as libc::c_double);
     };
 }
-unsafe extern "C" fn Sp_concat(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_concat(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut n: libc::c_int = 0;
     let mut out: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -21195,11 +20980,11 @@ unsafe extern "C" fn Sp_concat(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, out as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_indexOf(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_indexOf(J: *mut js_State) {
     let mut haystack: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut needle: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
-    let mut pos: libc::c_int = js_tointeger(J, 2 as libc::c_int);
-    let mut len: libc::c_int = strlen(needle) as libc::c_int;
+    let needle: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+    let pos: libc::c_int = js_tointeger(J, 2 as libc::c_int);
+    let len: libc::c_int = strlen(needle) as libc::c_int;
     let mut k: libc::c_int = 0 as libc::c_int;
     let mut rune: Rune = 0;
     while *haystack != 0 {
@@ -21213,15 +20998,15 @@ unsafe extern "C" fn Sp_indexOf(mut J: *mut js_State) {
     }
     js_pushnumber(J, -(1 as libc::c_int) as libc::c_double);
 }
-unsafe extern "C" fn Sp_lastIndexOf(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_lastIndexOf(J: *mut js_State) {
     let mut haystack: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut needle: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
-    let mut pos: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
+    let needle: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+    let pos: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tointeger(J, 2 as libc::c_int)
     } else {
         strlen(haystack) as libc::c_int
     };
-    let mut len: libc::c_int = strlen(needle) as libc::c_int;
+    let len: libc::c_int = strlen(needle) as libc::c_int;
     let mut k: libc::c_int = 0 as libc::c_int;
     let mut last: libc::c_int = -(1 as libc::c_int);
     let mut rune: Rune = 0;
@@ -21235,16 +21020,16 @@ unsafe extern "C" fn Sp_lastIndexOf(mut J: *mut js_State) {
     }
     js_pushnumber(J, last as libc::c_double);
 }
-unsafe extern "C" fn Sp_localeCompare(mut J: *mut js_State) {
-    let mut a: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut b: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+unsafe extern "C" fn Sp_localeCompare(J: *mut js_State) {
+    let a: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let b: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
     js_pushnumber(J, strcmp(a, b) as libc::c_double);
 }
 unsafe extern "C" fn Sp_substring_imp(
-    mut J: *mut js_State,
-    mut s: *const libc::c_char,
-    mut a: libc::c_int,
-    mut n: libc::c_int,
+    J: *mut js_State,
+    s: *const libc::c_char,
+    a: libc::c_int,
+    n: libc::c_int,
 ) {
     let mut head_rune: Rune = 0 as libc::c_int;
     let mut tail_rune: Rune = 0 as libc::c_int;
@@ -21331,9 +21116,9 @@ unsafe extern "C" fn Sp_substring_imp(
     js_endtry(J);
     js_free(J, p as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_slice(mut J: *mut js_State) {
-    let mut str: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut len: libc::c_int = js_utflen(str);
+unsafe extern "C" fn Sp_slice(J: *mut js_State) {
+    let str: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let len: libc::c_int = js_utflen(str);
     let mut s: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut e: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tointeger(J, 2 as libc::c_int)
@@ -21362,9 +21147,9 @@ unsafe extern "C" fn Sp_slice(mut J: *mut js_State) {
         Sp_substring_imp(J, str, e, s - e);
     };
 }
-unsafe extern "C" fn Sp_substring(mut J: *mut js_State) {
-    let mut str: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut len: libc::c_int = js_utflen(str);
+unsafe extern "C" fn Sp_substring(J: *mut js_State) {
+    let str: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let len: libc::c_int = js_utflen(str);
     let mut s: libc::c_int = js_tointeger(J, 1 as libc::c_int);
     let mut e: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tointeger(J, 2 as libc::c_int)
@@ -21391,9 +21176,9 @@ unsafe extern "C" fn Sp_substring(mut J: *mut js_State) {
         Sp_substring_imp(J, str, e, s - e);
     };
 }
-unsafe extern "C" fn Sp_toLowerCase(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_toLowerCase(J: *mut js_State) {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
-    let mut s0: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let s0: *const libc::c_char = checkstring(J, 0 as libc::c_int);
     let mut dst: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut d: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut rune: Rune = 0;
@@ -21444,9 +21229,9 @@ unsafe extern "C" fn Sp_toLowerCase(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, dst as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_toUpperCase(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_toUpperCase(J: *mut js_State) {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
-    let mut s0: *const libc::c_char = checkstring(J, 0 as libc::c_int);
+    let s0: *const libc::c_char = checkstring(J, 0 as libc::c_int);
     let mut dst: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut d: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut full: *const Rune = std::ptr::null::<Rune>();
@@ -21497,7 +21282,7 @@ unsafe extern "C" fn Sp_toUpperCase(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, dst as *mut libc::c_void);
 }
-unsafe extern "C" fn istrim(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn istrim(c: libc::c_int) -> libc::c_int {
     (c == 0x9 as libc::c_int
         || c == 0xb as libc::c_int
         || c == 0xc as libc::c_int
@@ -21509,7 +21294,7 @@ unsafe extern "C" fn istrim(mut c: libc::c_int) -> libc::c_int {
         || c == 0x2028 as libc::c_int
         || c == 0x2029 as libc::c_int) as libc::c_int
 }
-unsafe extern "C" fn Sp_trim(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_trim(J: *mut js_State) {
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut e: *const libc::c_char = std::ptr::null::<libc::c_char>();
     s = checkstring(J, 0 as libc::c_int);
@@ -21524,9 +21309,9 @@ unsafe extern "C" fn Sp_trim(mut J: *mut js_State) {
     }
     js_pushlstring(J, s, e.offset_from(s) as libc::c_long as libc::c_int);
 }
-unsafe extern "C" fn S_fromCharCode(mut J: *mut js_State) {
+unsafe extern "C" fn S_fromCharCode(J: *mut js_State) {
     let mut i: libc::c_int = 0;
-    let mut top: libc::c_int = js_gettop(J);
+    let top: libc::c_int = js_gettop(J);
     let mut s: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut p: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut c: Rune = 0;
@@ -21551,7 +21336,7 @@ unsafe extern "C" fn S_fromCharCode(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, s as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_match(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_match(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut text: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut len: libc::c_int = 0;
@@ -21620,7 +21405,7 @@ unsafe extern "C" fn Sp_match(mut J: *mut js_State) {
         js_pushnull(J);
     }
 }
-unsafe extern "C" fn Sp_search(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_search(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut text: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut m: Resub = Resub {
@@ -21652,7 +21437,7 @@ unsafe extern "C" fn Sp_search(mut J: *mut js_State) {
         js_pushnumber(J, -(1 as libc::c_int) as libc::c_double);
     };
 }
-unsafe extern "C" fn Sp_replace_regexp(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_replace_regexp(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut source: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -21711,7 +21496,7 @@ unsafe extern "C" fn Sp_replace_regexp(mut J: *mut js_State) {
             js_putm(J, &mut sb, source, s);
             while *r != 0 {
                 if *r as libc::c_int == '$' as i32 {
-                    let mut current_block_44: u64;
+                    let current_block_44: u64;
                     r = r.offset(1);
                     match *r as libc::c_int {
                         0 => {
@@ -21813,7 +21598,7 @@ unsafe extern "C" fn Sp_replace_regexp(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, sb as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_replace_string(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_replace_string(J: *mut js_State) {
     let mut source: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut needle: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut s: *const libc::c_char = std::ptr::null::<libc::c_char>();
@@ -21846,7 +21631,7 @@ unsafe extern "C" fn Sp_replace_string(mut J: *mut js_State) {
         js_putm(J, &mut sb, source, s);
         while *r != 0 {
             if *r as libc::c_int == '$' as i32 {
-                let mut current_block_29: u64;
+                let current_block_29: u64;
                 r = r.offset(1);
                 match *r as libc::c_int {
                     0 => {
@@ -21904,14 +21689,14 @@ unsafe extern "C" fn Sp_replace_string(mut J: *mut js_State) {
     js_endtry(J);
     js_free(J, sb as *mut libc::c_void);
 }
-unsafe extern "C" fn Sp_replace(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_replace(J: *mut js_State) {
     if js_isregexp(J, 1 as libc::c_int) != 0 {
         Sp_replace_regexp(J);
     } else {
         Sp_replace_string(J);
     };
 }
-unsafe extern "C" fn Sp_split_regexp(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_split_regexp(J: *mut js_State) {
     let mut re: *mut js_Regexp = std::ptr::null_mut::<js_Regexp>();
     let mut text: *const libc::c_char = std::ptr::null::<libc::c_char>();
     let mut limit: libc::c_int = 0;
@@ -22006,10 +21791,10 @@ unsafe extern "C" fn Sp_split_regexp(mut J: *mut js_State) {
     js_pushstring(J, p);
     js_setindex(J, -(2 as libc::c_int), len);
 }
-unsafe extern "C" fn Sp_split_string(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_split_string(J: *mut js_State) {
     let mut str: *const libc::c_char = checkstring(J, 0 as libc::c_int);
-    let mut sep: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
-    let mut limit: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
+    let sep: *const libc::c_char = js_tostring(J, 1 as libc::c_int);
+    let limit: libc::c_int = if js_isdefined(J, 2 as libc::c_int) != 0 {
         js_tointeger(J, 2 as libc::c_int)
     } else {
         (1 as libc::c_int) << 30 as libc::c_int
@@ -22036,7 +21821,7 @@ unsafe extern "C" fn Sp_split_string(mut J: *mut js_State) {
     }
     i = 0 as libc::c_int;
     while !str.is_null() && i < limit {
-        let mut s: *const libc::c_char = strstr(str, sep);
+        let s: *const libc::c_char = strstr(str, sep);
         if !s.is_null() {
             js_pushlstring(J, str, s.offset_from(str) as libc::c_long as libc::c_int);
             js_setindex(J, -(2 as libc::c_int), i);
@@ -22050,7 +21835,7 @@ unsafe extern "C" fn Sp_split_string(mut J: *mut js_State) {
         i;
     }
 }
-unsafe extern "C" fn Sp_split(mut J: *mut js_State) {
+unsafe extern "C" fn Sp_split(J: *mut js_State) {
     if js_isundefined(J, 1 as libc::c_int) != 0 {
         js_newarray(J);
         js_pushstring(J, js_tostring(J, 0 as libc::c_int));
@@ -22062,7 +21847,7 @@ unsafe extern "C" fn Sp_split(mut J: *mut js_State) {
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsB_initstring(mut J: *mut js_State) {
+pub unsafe extern "C" fn jsB_initstring(J: *mut js_State) {
     (*(*J).String_prototype).u.s.shrstr[0 as libc::c_int as usize] =
         0 as libc::c_int as libc::c_char;
     (*(*J).String_prototype).u.s.string = ((*(*J).String_prototype).u.s.shrstr).as_mut_ptr();
@@ -22204,8 +21989,8 @@ pub unsafe extern "C" fn jsB_initstring(mut J: *mut js_State) {
 #[no_mangle]
 pub unsafe extern "C" fn js_strtol(
     mut s: *const libc::c_char,
-    mut p: *mut *mut libc::c_char,
-    mut base: libc::c_int,
+    p: *mut *mut libc::c_char,
+    base: libc::c_int,
 ) -> libc::c_double {
     static mut table: [libc::c_uchar; 256] = [
         80 as libc::c_int as libc::c_uchar,
@@ -22521,8 +22306,8 @@ pub unsafe extern "C" fn jsV_numbertointeger(mut n: libc::c_double) -> libc::c_i
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_numbertoint32(mut n: libc::c_double) -> libc::c_int {
-    let mut two32: libc::c_double = 4294967296.0f64;
-    let mut two31: libc::c_double = 2147483648.0f64;
+    let two32: libc::c_double = 4294967296.0f64;
+    let two31: libc::c_double = 2147483648.0f64;
     if n.is_finite() as i32 == 0 || n == 0 as libc::c_int as libc::c_double {
         return 0 as libc::c_int;
     }
@@ -22539,18 +22324,18 @@ pub unsafe extern "C" fn jsV_numbertoint32(mut n: libc::c_double) -> libc::c_int
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_numbertouint32(mut n: libc::c_double) -> libc::c_uint {
+pub unsafe extern "C" fn jsV_numbertouint32(n: libc::c_double) -> libc::c_uint {
     jsV_numbertoint32(n) as libc::c_uint
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_numbertoint16(mut n: libc::c_double) -> libc::c_short {
+pub unsafe extern "C" fn jsV_numbertoint16(n: libc::c_double) -> libc::c_short {
     jsV_numbertoint32(n) as libc::c_short
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_numbertouint16(mut n: libc::c_double) -> libc::c_ushort {
+pub unsafe extern "C" fn jsV_numbertouint16(n: libc::c_double) -> libc::c_ushort {
     jsV_numbertoint32(n) as libc::c_ushort
 }
-unsafe extern "C" fn jsV_toString(mut J: *mut js_State, mut obj: *mut js_Object) -> libc::c_int {
+unsafe extern "C" fn jsV_toString(J: *mut js_State, obj: *mut js_Object) -> libc::c_int {
     js_pushobject(J, obj);
     js_getproperty(
         J,
@@ -22569,7 +22354,7 @@ unsafe extern "C" fn jsV_toString(mut J: *mut js_State, mut obj: *mut js_Object)
     js_pop(J, 2 as libc::c_int);
     0 as libc::c_int
 }
-unsafe extern "C" fn jsV_valueOf(mut J: *mut js_State, mut obj: *mut js_Object) -> libc::c_int {
+unsafe extern "C" fn jsV_valueOf(J: *mut js_State, obj: *mut js_Object) -> libc::c_int {
     js_pushobject(J, obj);
     js_getproperty(
         J,
@@ -22590,8 +22375,8 @@ unsafe extern "C" fn jsV_valueOf(mut J: *mut js_State, mut obj: *mut js_Object) 
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_toprimitive(
-    mut J: *mut js_State,
-    mut v: *mut js_Value,
+    J: *mut js_State,
+    v: *mut js_Value,
     mut preferred: libc::c_int,
 ) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -22627,7 +22412,7 @@ pub unsafe extern "C" fn jsV_toprimitive(
     (*v).u.litstr = b"[object]\0" as *const u8 as *const libc::c_char;
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_toboolean(mut J: *mut js_State, mut v: *mut js_Value) -> libc::c_int {
+pub unsafe extern "C" fn jsV_toboolean(J: *mut js_State, v: *mut js_Value) -> libc::c_int {
     match (*v).t.type_0 as libc::c_int {
         1 => 0 as libc::c_int,
         2 => 0 as libc::c_int,
@@ -22654,10 +22439,7 @@ pub unsafe extern "C" fn jsV_toboolean(mut J: *mut js_State, mut v: *mut js_Valu
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_itoa(
-    mut out: *mut libc::c_char,
-    mut v: libc::c_int,
-) -> *const libc::c_char {
+pub unsafe extern "C" fn js_itoa(out: *mut libc::c_char, v: libc::c_int) -> *const libc::c_char {
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut s: *mut libc::c_char = out;
     let mut a: libc::c_uint = 0;
@@ -22694,8 +22476,8 @@ pub unsafe extern "C" fn js_itoa(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_stringtofloat(
-    mut s: *const libc::c_char,
-    mut ep: *mut *mut libc::c_char,
+    s: *const libc::c_char,
+    ep: *mut *mut libc::c_char,
 ) -> libc::c_double {
     let mut end: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
     let mut n: libc::c_double = 0.;
@@ -22757,7 +22539,7 @@ pub unsafe extern "C" fn js_stringtofloat(
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_stringtonumber(
-    mut J: *mut js_State,
+    J: *mut js_State,
     mut s: *const libc::c_char,
 ) -> libc::c_double {
     let mut e: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
@@ -22813,10 +22595,7 @@ pub unsafe extern "C" fn jsV_stringtonumber(
     n
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_tonumber(
-    mut J: *mut js_State,
-    mut v: *mut js_Value,
-) -> libc::c_double {
+pub unsafe extern "C" fn jsV_tonumber(J: *mut js_State, v: *mut js_Value) -> libc::c_double {
     match (*v).t.type_0 as libc::c_int {
         1 => ::core::f32::NAN as libc::c_double,
         2 => 0 as libc::c_int as libc::c_double,
@@ -22832,17 +22611,14 @@ pub unsafe extern "C" fn jsV_tonumber(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_tointeger(
-    mut J: *mut js_State,
-    mut v: *mut js_Value,
-) -> libc::c_double {
+pub unsafe extern "C" fn jsV_tointeger(J: *mut js_State, v: *mut js_Value) -> libc::c_double {
     jsV_numbertointeger(jsV_tonumber(J, v)) as libc::c_double
 }
 #[no_mangle]
 pub unsafe extern "C" fn jsV_numbertostring(
-    mut J: *mut js_State,
-    mut buf: *mut libc::c_char,
-    mut f: libc::c_double,
+    J: *mut js_State,
+    buf: *mut libc::c_char,
+    f: libc::c_double,
 ) -> *const libc::c_char {
     let mut digits: [libc::c_char; 32] = [0; 32];
     let mut p: *mut libc::c_char = buf;
@@ -22875,7 +22651,7 @@ pub unsafe extern "C" fn jsV_numbertostring(
     if f >= (-(2147483647 as libc::c_int) - 1 as libc::c_int) as libc::c_double
         && f <= 2147483647 as libc::c_int as libc::c_double
     {
-        let mut i: libc::c_int = f as libc::c_int;
+        let i: libc::c_int = f as libc::c_int;
         if i as libc::c_double == f {
             return js_itoa(buf, i);
         }
@@ -22976,10 +22752,7 @@ pub unsafe extern "C" fn jsV_numbertostring(
     buf as *const libc::c_char
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_tostring(
-    mut J: *mut js_State,
-    mut v: *mut js_Value,
-) -> *const libc::c_char {
+pub unsafe extern "C" fn jsV_tostring(J: *mut js_State, v: *mut js_Value) -> *const libc::c_char {
     let mut buf: [libc::c_char; 32] = [0; 32];
     let mut p: *const libc::c_char = std::ptr::null::<libc::c_char>();
     match (*v).t.type_0 as libc::c_int {
@@ -23030,22 +22803,19 @@ pub unsafe extern "C" fn jsV_tostring(
         0 | _ => ((*v).u.shrstr).as_mut_ptr(),
     }
 }
-unsafe extern "C" fn jsV_newboolean(mut J: *mut js_State, mut v: libc::c_int) -> *mut js_Object {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CBOOLEAN, (*J).Boolean_prototype);
+unsafe extern "C" fn jsV_newboolean(J: *mut js_State, v: libc::c_int) -> *mut js_Object {
+    let obj: *mut js_Object = jsV_newobject(J, JS_CBOOLEAN, (*J).Boolean_prototype);
     (*obj).u.boolean = v;
     obj
 }
-unsafe extern "C" fn jsV_newnumber(mut J: *mut js_State, mut v: libc::c_double) -> *mut js_Object {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CNUMBER, (*J).Number_prototype);
+unsafe extern "C" fn jsV_newnumber(J: *mut js_State, v: libc::c_double) -> *mut js_Object {
+    let obj: *mut js_Object = jsV_newobject(J, JS_CNUMBER, (*J).Number_prototype);
     (*obj).u.number = v;
     obj
 }
-unsafe extern "C" fn jsV_newstring(
-    mut J: *mut js_State,
-    mut v: *const libc::c_char,
-) -> *mut js_Object {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CSTRING, (*J).String_prototype);
-    let mut n: size_t = strlen(v);
+unsafe extern "C" fn jsV_newstring(J: *mut js_State, v: *const libc::c_char) -> *mut js_Object {
+    let obj: *mut js_Object = jsV_newobject(J, JS_CSTRING, (*J).String_prototype);
+    let n: size_t = strlen(v);
     if n < ::core::mem::size_of::<[libc::c_char; 16]>() as libc::c_ulong {
         (*obj).u.s.string = ((*obj).u.s.shrstr).as_mut_ptr();
         memcpy(
@@ -23060,10 +22830,7 @@ unsafe extern "C" fn jsV_newstring(
     obj
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsV_toobject(
-    mut J: *mut js_State,
-    mut v: *mut js_Value,
-) -> *mut js_Object {
+pub unsafe extern "C" fn jsV_toobject(J: *mut js_State, v: *mut js_Value) -> *mut js_Object {
     let mut o: *mut js_Object = std::ptr::null_mut::<js_Object>();
     match (*v).t.type_0 as libc::c_int {
         2 => {
@@ -23100,7 +22867,7 @@ pub unsafe extern "C" fn jsV_toobject(
     o
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newobjectx(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_newobjectx(J: *mut js_State) {
     let mut prototype: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_isobject(J, -(1 as libc::c_int)) != 0 {
         prototype = js_toobject(J, -(1 as libc::c_int));
@@ -23109,38 +22876,38 @@ pub unsafe extern "C" fn js_newobjectx(mut J: *mut js_State) {
     js_pushobject(J, jsV_newobject(J, JS_COBJECT, prototype));
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newobject(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_newobject(J: *mut js_State) {
     js_pushobject(J, jsV_newobject(J, JS_COBJECT, (*J).Object_prototype));
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newarguments(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_newarguments(J: *mut js_State) {
     js_pushobject(J, jsV_newobject(J, JS_CARGUMENTS, (*J).Object_prototype));
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newarray(mut J: *mut js_State) {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CARRAY, (*J).Array_prototype);
+pub unsafe extern "C" fn js_newarray(J: *mut js_State) {
+    let obj: *mut js_Object = jsV_newobject(J, JS_CARRAY, (*J).Array_prototype);
     (*obj).u.a.simple = 1 as libc::c_int;
     js_pushobject(J, obj);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newboolean(mut J: *mut js_State, mut v: libc::c_int) {
+pub unsafe extern "C" fn js_newboolean(J: *mut js_State, v: libc::c_int) {
     js_pushobject(J, jsV_newboolean(J, v));
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newnumber(mut J: *mut js_State, mut v: libc::c_double) {
+pub unsafe extern "C" fn js_newnumber(J: *mut js_State, v: libc::c_double) {
     js_pushobject(J, jsV_newnumber(J, v));
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_newstring(mut J: *mut js_State, mut v: *const libc::c_char) {
+pub unsafe extern "C" fn js_newstring(J: *mut js_State, v: *const libc::c_char) {
     js_pushobject(J, jsV_newstring(J, v));
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newfunction(
-    mut J: *mut js_State,
-    mut fun: *mut js_Function,
-    mut scope: *mut js_Environment,
+    J: *mut js_State,
+    fun: *mut js_Function,
+    scope: *mut js_Environment,
 ) {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CFUNCTION, (*J).Function_prototype);
+    let obj: *mut js_Object = jsV_newobject(J, JS_CFUNCTION, (*J).Function_prototype);
     (*obj).u.f.function = fun;
     (*obj).u.f.scope = scope;
     js_pushobject(J, obj);
@@ -23168,23 +22935,23 @@ pub unsafe extern "C" fn js_newfunction(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newscript(
-    mut J: *mut js_State,
-    mut fun: *mut js_Function,
-    mut scope: *mut js_Environment,
+    J: *mut js_State,
+    fun: *mut js_Function,
+    scope: *mut js_Environment,
 ) {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CSCRIPT, std::ptr::null_mut::<js_Object>());
+    let obj: *mut js_Object = jsV_newobject(J, JS_CSCRIPT, std::ptr::null_mut::<js_Object>());
     (*obj).u.f.function = fun;
     (*obj).u.f.scope = scope;
     js_pushobject(J, obj);
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newcfunctionx(
-    mut J: *mut js_State,
-    mut cfun: js_CFunction,
-    mut name: *const libc::c_char,
-    mut length: libc::c_int,
-    mut data: *mut libc::c_void,
-    mut finalize: js_Finalize,
+    J: *mut js_State,
+    cfun: js_CFunction,
+    name: *const libc::c_char,
+    length: libc::c_int,
+    data: *mut libc::c_void,
+    finalize: js_Finalize,
 ) {
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
@@ -23226,10 +22993,10 @@ pub unsafe extern "C" fn js_newcfunctionx(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newcfunction(
-    mut J: *mut js_State,
-    mut cfun: js_CFunction,
-    mut name: *const libc::c_char,
-    mut length: libc::c_int,
+    J: *mut js_State,
+    cfun: js_CFunction,
+    name: *const libc::c_char,
+    length: libc::c_int,
 ) {
     js_newcfunctionx(
         J,
@@ -23242,13 +23009,13 @@ pub unsafe extern "C" fn js_newcfunction(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newcconstructor(
-    mut J: *mut js_State,
-    mut cfun: js_CFunction,
-    mut ccon: js_CFunction,
-    mut name: *const libc::c_char,
-    mut length: libc::c_int,
+    J: *mut js_State,
+    cfun: js_CFunction,
+    ccon: js_CFunction,
+    name: *const libc::c_char,
+    length: libc::c_int,
 ) {
-    let mut obj: *mut js_Object = jsV_newobject(J, JS_CCFUNCTION, (*J).Function_prototype);
+    let obj: *mut js_Object = jsV_newobject(J, JS_CCFUNCTION, (*J).Function_prototype);
     (*obj).u.c.name = name;
     (*obj).u.c.function = cfun;
     (*obj).u.c.constructor = ccon;
@@ -23278,13 +23045,13 @@ pub unsafe extern "C" fn js_newcconstructor(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newuserdatax(
-    mut J: *mut js_State,
-    mut tag: *const libc::c_char,
-    mut data: *mut libc::c_void,
-    mut has: js_HasProperty,
-    mut put: js_Put,
-    mut delete: js_Delete,
-    mut finalize: js_Finalize,
+    J: *mut js_State,
+    tag: *const libc::c_char,
+    data: *mut libc::c_void,
+    has: js_HasProperty,
+    put: js_Put,
+    delete: js_Delete,
+    finalize: js_Finalize,
 ) {
     let mut prototype: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut obj: *mut js_Object = std::ptr::null_mut::<js_Object>();
@@ -23310,15 +23077,15 @@ pub unsafe extern "C" fn js_newuserdatax(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_newuserdata(
-    mut J: *mut js_State,
-    mut tag: *const libc::c_char,
-    mut data: *mut libc::c_void,
-    mut finalize: js_Finalize,
+    J: *mut js_State,
+    tag: *const libc::c_char,
+    data: *mut libc::c_void,
+    finalize: js_Finalize,
 ) {
     js_newuserdatax(J, tag, data, None, None, None, finalize);
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_instanceof(mut J: *mut js_State) -> libc::c_int {
+pub unsafe extern "C" fn js_instanceof(J: *mut js_State) -> libc::c_int {
     let mut O: *mut js_Object = std::ptr::null_mut::<js_Object>();
     let mut V: *mut js_Object = std::ptr::null_mut::<js_Object>();
     if js_iscallable(J, -(1 as libc::c_int)) == 0 {
@@ -23354,12 +23121,12 @@ pub unsafe extern "C" fn js_instanceof(mut J: *mut js_State) -> libc::c_int {
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_concat(mut J: *mut js_State) {
+pub unsafe extern "C" fn js_concat(J: *mut js_State) {
     js_toprimitive(J, -(2 as libc::c_int), JS_HNONE as libc::c_int);
     js_toprimitive(J, -(1 as libc::c_int), JS_HNONE as libc::c_int);
     if js_isstring(J, -(2 as libc::c_int)) != 0 || js_isstring(J, -(1 as libc::c_int)) != 0 {
-        let mut sa: *const libc::c_char = js_tostring(J, -(2 as libc::c_int));
-        let mut sb: *const libc::c_char = js_tostring(J, -(1 as libc::c_int));
+        let sa: *const libc::c_char = js_tostring(J, -(2 as libc::c_int));
+        let sb: *const libc::c_char = js_tostring(J, -(1 as libc::c_int));
         let mut sab: *mut libc::c_char = std::ptr::null_mut::<libc::c_char>();
         if _setjmp(js_savetry(J) as *mut __jmp_buf_tag) != 0 {
             js_free(J, sab as *mut libc::c_void);
@@ -23381,17 +23148,14 @@ pub unsafe extern "C" fn js_concat(mut J: *mut js_State) {
         js_endtry(J);
         js_free(J, sab as *mut libc::c_void);
     } else {
-        let mut x: libc::c_double = js_tonumber(J, -(2 as libc::c_int));
-        let mut y: libc::c_double = js_tonumber(J, -(1 as libc::c_int));
+        let x: libc::c_double = js_tonumber(J, -(2 as libc::c_int));
+        let y: libc::c_double = js_tonumber(J, -(1 as libc::c_int));
         js_pop(J, 2 as libc::c_int);
         js_pushnumber(J, x + y);
     };
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_compare(
-    mut J: *mut js_State,
-    mut okay: *mut libc::c_int,
-) -> libc::c_int {
+pub unsafe extern "C" fn js_compare(J: *mut js_State, okay: *mut libc::c_int) -> libc::c_int {
     js_toprimitive(J, -(2 as libc::c_int), JS_HNUMBER as libc::c_int);
     js_toprimitive(J, -(1 as libc::c_int), JS_HNUMBER as libc::c_int);
     *okay = 1 as libc::c_int;
@@ -23401,8 +23165,8 @@ pub unsafe extern "C" fn js_compare(
             js_tostring(J, -(1 as libc::c_int)),
         )
     } else {
-        let mut x: libc::c_double = js_tonumber(J, -(2 as libc::c_int));
-        let mut y: libc::c_double = js_tonumber(J, -(1 as libc::c_int));
+        let x: libc::c_double = js_tonumber(J, -(2 as libc::c_int));
+        let y: libc::c_double = js_tonumber(J, -(1 as libc::c_int));
         if x.is_nan() as i32 != 0 || y.is_nan() as i32 != 0 {
             *okay = 0 as libc::c_int;
         }
@@ -23416,9 +23180,9 @@ pub unsafe extern "C" fn js_compare(
     }
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_equal(mut J: *mut js_State) -> libc::c_int {
-    let mut x: *mut js_Value = js_tovalue(J, -(2 as libc::c_int));
-    let mut y: *mut js_Value = js_tovalue(J, -(1 as libc::c_int));
+pub unsafe extern "C" fn js_equal(J: *mut js_State) -> libc::c_int {
+    let x: *mut js_Value = js_tovalue(J, -(2 as libc::c_int));
+    let y: *mut js_Value = js_tovalue(J, -(1 as libc::c_int));
     loop {
         if ((*x).t.type_0 as libc::c_int == JS_TSHRSTR as libc::c_int
             || (*x).t.type_0 as libc::c_int == JS_TMEMSTR as libc::c_int
@@ -23526,9 +23290,9 @@ pub unsafe extern "C" fn js_equal(mut J: *mut js_State) -> libc::c_int {
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_strictequal(mut J: *mut js_State) -> libc::c_int {
-    let mut x: *mut js_Value = js_tovalue(J, -(2 as libc::c_int));
-    let mut y: *mut js_Value = js_tovalue(J, -(1 as libc::c_int));
+pub unsafe extern "C" fn js_strictequal(J: *mut js_State) -> libc::c_int {
+    let x: *mut js_Value = js_tovalue(J, -(2 as libc::c_int));
+    let y: *mut js_Value = js_tovalue(J, -(1 as libc::c_int));
     if ((*x).t.type_0 as libc::c_int == JS_TSHRSTR as libc::c_int
         || (*x).t.type_0 as libc::c_int == JS_TMEMSTR as libc::c_int
         || (*x).t.type_0 as libc::c_int == JS_TLITSTR as libc::c_int)
@@ -23577,18 +23341,18 @@ pub unsafe extern "C" fn js_strictequal(mut J: *mut js_State) -> libc::c_int {
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn die(mut g: *mut cstate, mut message: *const libc::c_char) {
+unsafe extern "C" fn die(g: *mut cstate, message: *const libc::c_char) {
     (*g).error = message;
     longjmp(((*g).kaboom).as_mut_ptr(), 1 as libc::c_int);
 }
-unsafe extern "C" fn canon(mut c: Rune) -> libc::c_int {
-    let mut u: Rune = jsU_toupperrune(c);
+unsafe extern "C" fn canon(c: Rune) -> libc::c_int {
+    let u: Rune = jsU_toupperrune(c);
     if c >= 128 as libc::c_int && u < 128 as libc::c_int {
         return c;
     }
     u
 }
-unsafe extern "C" fn hex(mut g: *mut cstate, mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn hex(g: *mut cstate, c: libc::c_int) -> libc::c_int {
     if c >= '0' as i32 && c <= '9' as i32 {
         return c - '0' as i32;
     }
@@ -23604,7 +23368,7 @@ unsafe extern "C" fn hex(mut g: *mut cstate, mut c: libc::c_int) -> libc::c_int 
     );
     0 as libc::c_int
 }
-unsafe extern "C" fn dec(mut g: *mut cstate, mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn dec(g: *mut cstate, c: libc::c_int) -> libc::c_int {
     if c >= '0' as i32 && c <= '9' as i32 {
         return c - '0' as i32;
     }
@@ -23614,12 +23378,12 @@ unsafe extern "C" fn dec(mut g: *mut cstate, mut c: libc::c_int) -> libc::c_int 
     );
     0 as libc::c_int
 }
-unsafe extern "C" fn isunicodeletter(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn isunicodeletter(c: libc::c_int) -> libc::c_int {
     (c >= 'a' as i32 && c <= 'z' as i32
         || c >= 'A' as i32 && c <= 'Z' as i32
         || jsU_isalpharune(c) != 0) as libc::c_int
 }
-unsafe extern "C" fn nextrune(mut g: *mut cstate) -> libc::c_int {
+unsafe extern "C" fn nextrune(g: *mut cstate) -> libc::c_int {
     if *(*g).source == 0 {
         (*g).yychar = -(1 as libc::c_int);
         return 0 as libc::c_int;
@@ -23740,7 +23504,7 @@ unsafe extern "C" fn nextrune(mut g: *mut cstate) -> libc::c_int {
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn lexcount(mut g: *mut cstate) -> libc::c_int {
+unsafe extern "C" fn lexcount(g: *mut cstate) -> libc::c_int {
     let fresh133 = (*g).source;
     (*g).source = ((*g).source).offset(1);
     (*g).yychar = *fresh133 as Rune;
@@ -23783,7 +23547,7 @@ unsafe extern "C" fn lexcount(mut g: *mut cstate) -> libc::c_int {
     }
     L_COUNT as libc::c_int
 }
-unsafe extern "C" fn newcclass(mut g: *mut cstate) {
+unsafe extern "C" fn newcclass(g: *mut cstate) {
     if (*g).ncclass >= 128 as libc::c_int {
         die(
             g,
@@ -23795,8 +23559,8 @@ unsafe extern "C" fn newcclass(mut g: *mut cstate) {
     (*g).yycc = ((*g).cclass).as_mut_ptr().offset(fresh139 as isize);
     (*(*g).yycc).end = ((*(*g).yycc).spans).as_mut_ptr();
 }
-unsafe extern "C" fn addrange(mut g: *mut cstate, mut a: Rune, mut b: Rune) {
-    let mut cc: *mut Reclass = (*g).yycc;
+unsafe extern "C" fn addrange(g: *mut cstate, a: Rune, b: Rune) {
+    let cc: *mut Reclass = (*g).yycc;
     let mut p: *mut Rune = std::ptr::null_mut::<Rune>();
     if a > b {
         die(
@@ -23849,21 +23613,21 @@ unsafe extern "C" fn addrange(mut g: *mut cstate, mut a: Rune, mut b: Rune) {
     (*cc).end = ((*cc).end).offset(1);
     *fresh141 = b;
 }
-unsafe extern "C" fn addranges_d(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_d(g: *mut cstate) {
     addrange(g, '0' as i32, '9' as i32);
 }
-unsafe extern "C" fn addranges_D(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_D(g: *mut cstate) {
     addrange(g, 0 as libc::c_int, '0' as i32 - 1 as libc::c_int);
     addrange(g, '9' as i32 + 1 as libc::c_int, 0xffff as libc::c_int);
 }
-unsafe extern "C" fn addranges_s(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_s(g: *mut cstate) {
     addrange(g, 0x9 as libc::c_int, 0xd as libc::c_int);
     addrange(g, 0x20 as libc::c_int, 0x20 as libc::c_int);
     addrange(g, 0xa0 as libc::c_int, 0xa0 as libc::c_int);
     addrange(g, 0x2028 as libc::c_int, 0x2029 as libc::c_int);
     addrange(g, 0xfeff as libc::c_int, 0xfeff as libc::c_int);
 }
-unsafe extern "C" fn addranges_S(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_S(g: *mut cstate) {
     addrange(g, 0 as libc::c_int, 0x9 as libc::c_int - 1 as libc::c_int);
     addrange(
         g,
@@ -23891,13 +23655,13 @@ unsafe extern "C" fn addranges_S(mut g: *mut cstate) {
         0xffff as libc::c_int,
     );
 }
-unsafe extern "C" fn addranges_w(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_w(g: *mut cstate) {
     addrange(g, '0' as i32, '9' as i32);
     addrange(g, 'A' as i32, 'Z' as i32);
     addrange(g, '_' as i32, '_' as i32);
     addrange(g, 'a' as i32, 'z' as i32);
 }
-unsafe extern "C" fn addranges_W(mut g: *mut cstate) {
+unsafe extern "C" fn addranges_W(g: *mut cstate) {
     addrange(g, 0 as libc::c_int, '0' as i32 - 1 as libc::c_int);
     addrange(
         g,
@@ -23916,7 +23680,7 @@ unsafe extern "C" fn addranges_W(mut g: *mut cstate) {
     );
     addrange(g, 'z' as i32 + 1 as libc::c_int, 0xffff as libc::c_int);
 }
-unsafe extern "C" fn lexclass(mut g: *mut cstate) -> libc::c_int {
+unsafe extern "C" fn lexclass(g: *mut cstate) -> libc::c_int {
     let mut type_0: libc::c_int = L_CCLASS as libc::c_int;
     let mut quoted: libc::c_int = 0;
     let mut havesave: libc::c_int = 0;
@@ -24017,8 +23781,8 @@ unsafe extern "C" fn lexclass(mut g: *mut cstate) -> libc::c_int {
     }
     type_0
 }
-unsafe extern "C" fn lex(mut g: *mut cstate) -> libc::c_int {
-    let mut quoted: libc::c_int = nextrune(g);
+unsafe extern "C" fn lex(g: *mut cstate) -> libc::c_int {
+    let quoted: libc::c_int = nextrune(g);
     if quoted != 0 {
         match (*g).yychar {
             98 => return L_WORD as libc::c_int,
@@ -24102,10 +23866,10 @@ unsafe extern "C" fn lex(mut g: *mut cstate) -> libc::c_int {
     }
     L_CHAR as libc::c_int
 }
-unsafe extern "C" fn newnode(mut g: *mut cstate, mut type_0: libc::c_int) -> *mut Renode {
+unsafe extern "C" fn newnode(g: *mut cstate, type_0: libc::c_int) -> *mut Renode {
     let fresh143 = (*g).pend;
     (*g).pend = ((*g).pend).offset(1);
-    let mut node: *mut Renode = fresh143;
+    let node: *mut Renode = fresh143;
     (*node).type_0 = type_0 as libc::c_uchar;
     (*node).cc = -(1 as libc::c_int);
     (*node).c = 0 as libc::c_int;
@@ -24116,7 +23880,7 @@ unsafe extern "C" fn newnode(mut g: *mut cstate, mut type_0: libc::c_int) -> *mu
     (*node).x = (*node).y;
     node
 }
-unsafe extern "C" fn empty(mut node: *mut Renode) -> libc::c_int {
+unsafe extern "C" fn empty(node: *mut Renode) -> libc::c_int {
     if node.is_null() {
         return 1 as libc::c_int;
     }
@@ -24131,13 +23895,13 @@ unsafe extern "C" fn empty(mut node: *mut Renode) -> libc::c_int {
     }
 }
 unsafe extern "C" fn newrep(
-    mut g: *mut cstate,
-    mut atom: *mut Renode,
-    mut ng: libc::c_int,
-    mut min: libc::c_int,
-    mut max: libc::c_int,
+    g: *mut cstate,
+    atom: *mut Renode,
+    ng: libc::c_int,
+    min: libc::c_int,
+    max: libc::c_int,
 ) -> *mut Renode {
-    let mut rep: *mut Renode = newnode(g, P_REP as libc::c_int);
+    let rep: *mut Renode = newnode(g, P_REP as libc::c_int);
     if max == 255 as libc::c_int && empty(atom) != 0 {
         die(
             g,
@@ -24150,17 +23914,17 @@ unsafe extern "C" fn newrep(
     (*rep).x = atom;
     rep
 }
-unsafe extern "C" fn regnext(mut g: *mut cstate) {
+unsafe extern "C" fn regnext(g: *mut cstate) {
     (*g).lookahead = lex(g);
 }
-unsafe extern "C" fn regaccept(mut g: *mut cstate, mut t: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn regaccept(g: *mut cstate, t: libc::c_int) -> libc::c_int {
     if (*g).lookahead == t {
         regnext(g);
         return 1 as libc::c_int;
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn parseatom(mut g: *mut cstate) -> *mut Renode {
+unsafe extern "C" fn parseatom(g: *mut cstate) -> *mut Renode {
     let mut atom: *mut Renode = std::ptr::null_mut::<Renode>();
     if (*g).lookahead == L_CHAR as libc::c_int {
         atom = newnode(g, P_CHAR as libc::c_int);
@@ -24245,7 +24009,7 @@ unsafe extern "C" fn parseatom(mut g: *mut cstate) -> *mut Renode {
     die(g, b"syntax error\0" as *const u8 as *const libc::c_char);
     std::ptr::null_mut::<Renode>()
 }
-unsafe extern "C" fn parserep(mut g: *mut cstate) -> *mut Renode {
+unsafe extern "C" fn parserep(g: *mut cstate) -> *mut Renode {
     let mut atom: *mut Renode = std::ptr::null_mut::<Renode>();
     if regaccept(g, '^' as i32) != 0 {
         return newnode(g, P_BOL as libc::c_int);
@@ -24261,8 +24025,8 @@ unsafe extern "C" fn parserep(mut g: *mut cstate) -> *mut Renode {
     }
     atom = parseatom(g);
     if (*g).lookahead == L_COUNT as libc::c_int {
-        let mut min: libc::c_int = (*g).yymin;
-        let mut max: libc::c_int = (*g).yymax;
+        let min: libc::c_int = (*g).yymin;
+        let max: libc::c_int = (*g).yymax;
         regnext(g);
         if max < min {
             die(
@@ -24301,7 +24065,7 @@ unsafe extern "C" fn parserep(mut g: *mut cstate) -> *mut Renode {
     }
     atom
 }
-unsafe extern "C" fn parsecat(mut g: *mut cstate) -> *mut Renode {
+unsafe extern "C" fn parsecat(g: *mut cstate) -> *mut Renode {
     let mut cat: *mut Renode = std::ptr::null_mut::<Renode>();
     let mut head: *mut Renode = std::ptr::null_mut::<Renode>();
     let mut tail: *mut *mut Renode = std::ptr::null_mut::<*mut Renode>();
@@ -24325,7 +24089,7 @@ unsafe extern "C" fn parsecat(mut g: *mut cstate) -> *mut Renode {
     }
     std::ptr::null_mut::<Renode>()
 }
-unsafe extern "C" fn parsealt(mut g: *mut cstate) -> *mut Renode {
+unsafe extern "C" fn parsealt(g: *mut cstate) -> *mut Renode {
     let mut alt: *mut Renode = std::ptr::null_mut::<Renode>();
     let mut x: *mut Renode = std::ptr::null_mut::<Renode>();
     alt = parsecat(g);
@@ -24338,8 +24102,8 @@ unsafe extern "C" fn parsealt(mut g: *mut cstate) -> *mut Renode {
     alt
 }
 unsafe extern "C" fn count(
-    mut g: *mut cstate,
-    mut node: *mut Renode,
+    g: *mut cstate,
+    node: *mut Renode,
     mut depth: libc::c_int,
 ) -> libc::c_int {
     let mut min: libc::c_int = 0;
@@ -24379,10 +24143,10 @@ unsafe extern "C" fn count(
         _ => 1 as libc::c_int,
     }
 }
-unsafe extern "C" fn regemit(mut prog: *mut Reprog, mut opcode: libc::c_int) -> *mut Reinst {
+unsafe extern "C" fn regemit(prog: *mut Reprog, opcode: libc::c_int) -> *mut Reinst {
     let fresh145 = (*prog).end;
     (*prog).end = ((*prog).end).offset(1);
-    let mut inst: *mut Reinst = fresh145;
+    let inst: *mut Reinst = fresh145;
     (*inst).opcode = opcode as libc::c_uchar;
     (*inst).n = 0 as libc::c_int as libc::c_uchar;
     (*inst).c = 0 as libc::c_int;
@@ -24391,8 +24155,8 @@ unsafe extern "C" fn regemit(mut prog: *mut Reprog, mut opcode: libc::c_int) -> 
     (*inst).x = (*inst).y;
     inst
 }
-unsafe extern "C" fn compile(mut prog: *mut Reprog, mut node: *mut Renode) {
-    let mut current_block: u64;
+unsafe extern "C" fn compile(prog: *mut Reprog, mut node: *mut Renode) {
+    let current_block: u64;
     let mut inst: *mut Reinst = std::ptr::null_mut::<Reinst>();
     let mut split_0: *mut Reinst = std::ptr::null_mut::<Reinst>();
     let mut jump: *mut Reinst = std::ptr::null_mut::<Reinst>();
@@ -24562,17 +24326,17 @@ unsafe extern "C" fn compile(mut prog: *mut Reprog, mut node: *mut Renode) {
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_regcompx(
-    mut alloc: Option<
+    alloc: Option<
         unsafe extern "C" fn(
             *mut libc::c_void,
             *mut libc::c_void,
             libc::c_int,
         ) -> *mut libc::c_void,
     >,
-    mut ctx: *mut libc::c_void,
-    mut pattern: *const libc::c_char,
-    mut cflags: libc::c_int,
-    mut errorp: *mut *const libc::c_char,
+    ctx: *mut libc::c_void,
+    pattern: *const libc::c_char,
+    cflags: libc::c_int,
+    errorp: *mut *const libc::c_char,
 ) -> *mut Reprog {
     let mut g: cstate = cstate {
         prog: std::ptr::null_mut::<Reprog>(),
@@ -24768,15 +24532,15 @@ pub unsafe extern "C" fn js_regcompx(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_regfreex(
-    mut alloc: Option<
+    alloc: Option<
         unsafe extern "C" fn(
             *mut libc::c_void,
             *mut libc::c_void,
             libc::c_int,
         ) -> *mut libc::c_void,
     >,
-    mut ctx: *mut libc::c_void,
-    mut prog: *mut Reprog,
+    ctx: *mut libc::c_void,
+    prog: *mut Reprog,
 ) {
     if !prog.is_null() {
         if !((*prog).cclass).is_null() {
@@ -24795,9 +24559,9 @@ pub unsafe extern "C" fn js_regfreex(
     }
 }
 unsafe extern "C" fn default_alloc(
-    mut ctx: *mut libc::c_void,
-    mut p: *mut libc::c_void,
-    mut n: libc::c_int,
+    ctx: *mut libc::c_void,
+    p: *mut libc::c_void,
+    n: libc::c_int,
 ) -> *mut libc::c_void {
     if n == 0 as libc::c_int {
         free(p);
@@ -24807,9 +24571,9 @@ unsafe extern "C" fn default_alloc(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_regcomp(
-    mut pattern: *const libc::c_char,
-    mut cflags: libc::c_int,
-    mut errorp: *mut *const libc::c_char,
+    pattern: *const libc::c_char,
+    cflags: libc::c_int,
+    errorp: *mut *const libc::c_char,
 ) -> *mut Reprog {
     js_regcompx(
         Some(
@@ -24827,7 +24591,7 @@ pub unsafe extern "C" fn js_regcomp(
     )
 }
 #[no_mangle]
-pub unsafe extern "C" fn js_regfree(mut prog: *mut Reprog) {
+pub unsafe extern "C" fn js_regfree(prog: *mut Reprog) {
     js_regfreex(
         Some(
             default_alloc
@@ -24841,19 +24605,19 @@ pub unsafe extern "C" fn js_regfree(mut prog: *mut Reprog) {
         prog,
     );
 }
-unsafe extern "C" fn isnewline(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn isnewline(c: libc::c_int) -> libc::c_int {
     (c == 0xa as libc::c_int
         || c == 0xd as libc::c_int
         || c == 0x2028 as libc::c_int
         || c == 0x2029 as libc::c_int) as libc::c_int
 }
-unsafe extern "C" fn iswordchar(mut c: libc::c_int) -> libc::c_int {
+unsafe extern "C" fn iswordchar(c: libc::c_int) -> libc::c_int {
     (c == '_' as i32
         || c >= 'a' as i32 && c <= 'z' as i32
         || c >= 'A' as i32 && c <= 'Z' as i32
         || c >= '0' as i32 && c <= '9' as i32) as libc::c_int
 }
-unsafe extern "C" fn incclass(mut cc: *mut Reclass, mut c: Rune) -> libc::c_int {
+unsafe extern "C" fn incclass(cc: *mut Reclass, c: Rune) -> libc::c_int {
     let mut p: *mut Rune = std::ptr::null_mut::<Rune>();
     p = ((*cc).spans).as_mut_ptr();
     while p < (*cc).end {
@@ -24864,7 +24628,7 @@ unsafe extern "C" fn incclass(mut cc: *mut Reclass, mut c: Rune) -> libc::c_int 
     }
     0 as libc::c_int
 }
-unsafe extern "C" fn incclasscanon(mut cc: *mut Reclass, mut c: Rune) -> libc::c_int {
+unsafe extern "C" fn incclasscanon(cc: *mut Reclass, c: Rune) -> libc::c_int {
     let mut p: *mut Rune = std::ptr::null_mut::<Rune>();
     let mut r: Rune = 0;
     p = ((*cc).spans).as_mut_ptr();
@@ -24913,10 +24677,10 @@ unsafe extern "C" fn strncmpcanon(
 unsafe extern "C" fn match_0(
     mut pc: *mut Reinst,
     mut sp: *const libc::c_char,
-    mut bol: *const libc::c_char,
-    mut flags: libc::c_int,
-    mut out: *mut Resub,
-    mut depth: libc::c_int,
+    bol: *const libc::c_char,
+    flags: libc::c_int,
+    out: *mut Resub,
+    depth: libc::c_int,
 ) -> libc::c_int {
     let mut scratch: Resub = Resub {
         nsub: 0,
@@ -24932,7 +24696,7 @@ unsafe extern "C" fn match_0(
         return -(1 as libc::c_int);
     }
     loop {
-        let mut current_block_97: u64;
+        let current_block_97: u64;
         match (*pc).opcode as libc::c_int {
             0 => return 0 as libc::c_int,
             1 => {
@@ -25135,10 +24899,10 @@ unsafe extern "C" fn match_0(
 }
 #[no_mangle]
 pub unsafe extern "C" fn js_regexec(
-    mut prog: *mut Reprog,
-    mut sp: *const libc::c_char,
+    prog: *mut Reprog,
+    sp: *const libc::c_char,
     mut sub: *mut Resub,
-    mut eflags: libc::c_int,
+    eflags: libc::c_int,
 ) -> libc::c_int {
     let mut scratch: Resub = Resub {
         nsub: 0,
@@ -29853,10 +29617,7 @@ static mut ucd_toupper_full: [Rune; 510] = [
     0 as libc::c_int,
 ];
 #[no_mangle]
-pub unsafe extern "C" fn jsU_chartorune(
-    mut rune: *mut Rune,
-    mut str: *const libc::c_char,
-) -> libc::c_int {
+pub unsafe extern "C" fn jsU_chartorune(rune: *mut Rune, str: *const libc::c_char) -> libc::c_int {
     let mut c: libc::c_int = 0;
     let mut c1: libc::c_int = 0;
     let mut c2: libc::c_int = 0;
@@ -29915,10 +29676,7 @@ pub unsafe extern "C" fn jsU_chartorune(
     1 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_runetochar(
-    mut str: *mut libc::c_char,
-    mut rune: *const Rune,
-) -> libc::c_int {
+pub unsafe extern "C" fn jsU_runetochar(str: *mut libc::c_char, rune: *const Rune) -> libc::c_int {
     let mut c: libc::c_int = *rune;
     if c == 0 as libc::c_int {
         *str.offset(0 as libc::c_int as isize) = 0xc0 as libc::c_int as libc::c_char;
@@ -29962,17 +29720,17 @@ pub unsafe extern "C" fn jsU_runetochar(
     4 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_runelen(mut c: libc::c_int) -> libc::c_int {
+pub unsafe extern "C" fn jsU_runelen(c: libc::c_int) -> libc::c_int {
     let mut rune: Rune = 0;
     let mut str: [libc::c_char; 10] = [0; 10];
     rune = c;
     jsU_runetochar(str.as_mut_ptr(), &mut rune)
 }
 unsafe extern "C" fn ucd_bsearch(
-    mut c: Rune,
+    c: Rune,
     mut t: *const Rune,
     mut n: libc::c_int,
-    mut ne: libc::c_int,
+    ne: libc::c_int,
 ) -> *const Rune {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     let mut m: libc::c_int = 0;
@@ -29992,7 +29750,7 @@ unsafe extern "C" fn ucd_bsearch(
     std::ptr::null::<Rune>()
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_tolowerrune(mut c: Rune) -> Rune {
+pub unsafe extern "C" fn jsU_tolowerrune(c: Rune) -> Rune {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30022,7 +29780,7 @@ pub unsafe extern "C" fn jsU_tolowerrune(mut c: Rune) -> Rune {
     c
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_toupperrune(mut c: Rune) -> Rune {
+pub unsafe extern "C" fn jsU_toupperrune(c: Rune) -> Rune {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30052,7 +29810,7 @@ pub unsafe extern "C" fn jsU_toupperrune(mut c: Rune) -> Rune {
     c
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_islowerrune(mut c: Rune) -> libc::c_int {
+pub unsafe extern "C" fn jsU_islowerrune(c: Rune) -> libc::c_int {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30082,7 +29840,7 @@ pub unsafe extern "C" fn jsU_islowerrune(mut c: Rune) -> libc::c_int {
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_isupperrune(mut c: Rune) -> libc::c_int {
+pub unsafe extern "C" fn jsU_isupperrune(c: Rune) -> libc::c_int {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30112,7 +29870,7 @@ pub unsafe extern "C" fn jsU_isupperrune(mut c: Rune) -> libc::c_int {
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_isalpharune(mut c: Rune) -> libc::c_int {
+pub unsafe extern "C" fn jsU_isalpharune(c: Rune) -> libc::c_int {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30141,7 +29899,7 @@ pub unsafe extern "C" fn jsU_isalpharune(mut c: Rune) -> libc::c_int {
     0 as libc::c_int
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_tolowerrune_full(mut c: Rune) -> *const Rune {
+pub unsafe extern "C" fn jsU_tolowerrune_full(c: Rune) -> *const Rune {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,
@@ -30157,7 +29915,7 @@ pub unsafe extern "C" fn jsU_tolowerrune_full(mut c: Rune) -> *const Rune {
     std::ptr::null::<Rune>()
 }
 #[no_mangle]
-pub unsafe extern "C" fn jsU_toupperrune_full(mut c: Rune) -> *const Rune {
+pub unsafe extern "C" fn jsU_toupperrune_full(c: Rune) -> *const Rune {
     let mut p: *const Rune = std::ptr::null::<Rune>();
     p = ucd_bsearch(
         c,

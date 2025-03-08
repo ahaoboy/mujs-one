@@ -36,7 +36,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           rustflags: "-A warnings"
-          toolchain: "nightly-2022-08-08"
+          toolchain: "nightly"
       - name: build-${{ matrix.target }}
         run: |
           cargo --version
