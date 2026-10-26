@@ -13,9 +13,9 @@ include = ["/src", "/Cargo.toml", "/README.md"]
 # libc = "0.2"
 # compact_str = "0.9"
 
-# [profile.release]
-# debug = false
-# lto = true
-# strip = true
-# opt-level = 3
-# codegen-units = 1
+[profile.release]
+debug = false
+lto = true
+strip = true
+opt-level = 3
+codegen-units = 1

@@ -39,7 +39,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v2
         with:
           toolchain: nightly
-          build-warnings: false
+          build-warnings: allow
 
       - name: build-${{ matrix.target }}
         run: |
