@@ -37,6 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v2
+        toolchain: nightly
+
       - name: build-${{ matrix.target }}
         run: |
           cargo --version
