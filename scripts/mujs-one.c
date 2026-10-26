@@ -1,9 +1,10 @@
 
-
+/* BEGIN: mujs/jsi.h */
 #ifndef jsi_h
 #define jsi_h
 
 
+/* BEGIN: mujs/mujs.h */
 #ifndef mujs_h
 #define mujs_h
 
@@ -15,7 +16,7 @@ extern "C" {
 
 #define JS_VERSION_MAJOR 1
 #define JS_VERSION_MINOR 3
-#define JS_VERSION_PATCH 5
+#define JS_VERSION_PATCH 8
 
 #define JS_VERSION (JS_VERSION_MAJOR * 10000 + JS_VERSION_MINOR * 100 + JS_VERSION_PATCH)
 #define JS_CHECKVERSION(x,y,z) (JS_VERSION >= ((x) * 10000 + (y) * 100 + (z)))
@@ -62,6 +63,7 @@ void js_setreport(js_State *J, js_Report report);
 js_Panic js_atpanic(js_State *J, js_Panic panic);
 void js_freestate(js_State *J);
 void js_gc(js_State *J, int report);
+void js_setlimit(js_State *J, int runlimit, int memlimit);
 
 int js_dostring(js_State *J, const char *source);
 int js_dofile(js_State *J, const char *filename);
@@ -257,6 +259,7 @@ const char *js_tryrepr(js_State *J, int idx, const char *error);
 
 #endif
 
+/* END: mujs/mujs.h */
 
 
 #include <stdio.h>
@@ -422,6 +425,7 @@ struct js_StackTrace
 	const char *name;
 	const char *file;
 	int line;
+	int stack;
 };
 
 /* Exception handling */
@@ -526,6 +530,9 @@ struct js_State
 
 	js_Object *gcroot; /* gc scan list */
 
+	int runlimit;
+	int memlimit;
+
 	/* environments on the call stack but currently not in scope */
 	int envtop;
 	js_Environment *envstack[JS_ENVLIMIT];
@@ -615,8 +622,8 @@ struct js_Regexp
 {
 	void *prog;
 	char *source;
-	unsigned short flags;
-	unsigned short last;
+	int flags;
+	int last;
 };
 
 struct js_Object
@@ -1122,7 +1129,14 @@ void jsB_props(js_State *J, const char *name, const char *string);
 
 #endif
 
+/* END: mujs/jsi.h */
 
+
+/* BEGIN: mujs/jsarray.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #ifndef JS_HEAPSORT
@@ -1188,6 +1202,38 @@ static void Ap_concat(js_State *J)
 	}
 }
 
+/* ugly cycle detection for Array.prototype.join */
+static void Ap_join(js_State *J);
+static void Ap_toString(js_State *J);
+static int Ap_join_cycle(js_State *J)
+{
+	js_Object *needle = js_toobject(J, 0);
+	int top = J->tracetop - 1;
+	while (top > 0) {
+		int stk = J->trace[top].stack;
+		js_Value *fun = &J->stack[stk-1];
+		if (fun->t.type != JS_TOBJECT) return 0;
+		if (fun->u.object->type != JS_CCFUNCTION) return 0;
+		if (fun->u.object->u.c.function == Ap_join)
+		{
+			js_Value *obj = &J->stack[stk];
+			if (obj->t.type != JS_TOBJECT) return 0;
+			if (obj->u.object == needle)
+				return 1;
+		}
+		else if (fun->u.object->u.c.function == Ap_toString)
+		{
+			/* join calls toString which calls join which calls toString, etc */
+		}
+		else
+		{
+			return 0;
+		}
+		--top;
+	}
+	return 0;
+}
+
 static void Ap_join(js_State *J)
 {
 	char * volatile out = NULL;
@@ -1195,6 +1241,11 @@ static void Ap_join(js_State *J)
 	const char *sep;
 	int seplen;
 	int k, n, len, rlen;
+
+	if (Ap_join_cycle(J)) {
+		js_pushliteral(J, "");
+		return;
+	}
 
 	len = js_getlength(J, 0);
 
@@ -1365,7 +1416,7 @@ static void Ap_slice(js_State *J)
 static int Ap_sort_cmp(js_State *J, int idx_a, int idx_b)
 {
 	js_Object *obj = js_tovalue(J, 0)->u.object;
-	if (obj->u.a.simple) {
+	if (obj->type == JS_CARRAY && obj->u.a.simple && idx_b < obj->u.a.flat_length) {
 		js_Value *val_a = &obj->u.a.array[idx_a];
 		js_Value *val_b = &obj->u.a.array[idx_b];
 		int und_a = val_a->t.type == JS_TUNDEFINED;
@@ -1451,7 +1502,7 @@ static int Ap_sort_cmp(js_State *J, int idx_a, int idx_b)
 static void Ap_sort_swap(js_State *J, int idx_a, int idx_b)
 {
 	js_Object *obj = js_tovalue(J, 0)->u.object;
-	if (obj->u.a.simple) {
+	if (obj->type == JS_CARRAY && obj->u.a.simple && idx_b < obj->u.a.flat_length) {
 		js_Value tmp = obj->u.a.array[idx_a];
 		obj->u.a.array[idx_a] = obj->u.a.array[idx_b];
 		obj->u.a.array[idx_b] = tmp;
@@ -1479,7 +1530,7 @@ static int Ap_sort_leaf(js_State *J, int i, int end)
 	int lc = (j << 1) + 1; /* left child */
 	int rc = (j << 1) + 2; /* right child */
 	while (rc < end) {
-		if (Ap_sort_cmp(J, rc, lc) > 0)
+		if (Ap_sort_cmp(J, lc, rc) <= 0)
 			j = rc;
 		else
 			j = lc;
@@ -1494,8 +1545,9 @@ static int Ap_sort_leaf(js_State *J, int i, int end)
 static void Ap_sort_sift(js_State *J, int i, int end)
 {
 	int j = Ap_sort_leaf(J, i, end);
-	while (Ap_sort_cmp(J, i, j) > 0)
+	while (j > i && Ap_sort_cmp(J, i, j) > 0) {
 		j = (j - 1) >> 1; /* parent */
+	}
 	while (j > i) {
 		Ap_sort_swap(J, i, j);
 		j = (j - 1) >> 1; /* parent */
@@ -1956,7 +2008,14 @@ void jsB_initarray(js_State *J)
 	js_defglobal(J, "Array", JS_DONTENUM);
 }
 
+/* END: mujs/jsarray.c */
 
+
+/* BEGIN: mujs/jsboolean.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 static void jsB_new_Boolean(js_State *J)
@@ -1996,9 +2055,17 @@ void jsB_initboolean(js_State *J)
 	js_defglobal(J, "Boolean", JS_DONTENUM);
 }
 
+/* END: mujs/jsboolean.c */
 
 
+/* BEGIN: mujs/jsbuiltin.c */
 
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/regexp.h */
 #ifndef regexp_h
 #define regexp_h
 
@@ -2027,6 +2094,7 @@ enum {
 
 	/* regexec flags */
 	REG_NOTBOL = 4,
+	REG_RUNAWAY = 8, /* detect runaway backtracking */
 };
 
 /* If you redefine REG_MAXSUB, you must make sure both the calling
@@ -2046,6 +2114,7 @@ struct Resub {
 
 #endif
 
+/* END: mujs/regexp.h */
 
 
 static void jsB_globalf(js_State *J, const char *name, js_CFunction cfun, int n)
@@ -2295,7 +2364,14 @@ void jsB_init(js_State *J)
 	jsB_globalf(J, "encodeURIComponent", jsB_encodeURIComponent, 1);
 }
 
+/* END: mujs/jsbuiltin.c */
 
+
+/* BEGIN: mujs/jscompile.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #define cexp jsC_cexp /* collision with math.h */
@@ -3100,9 +3176,8 @@ static void labeljumps(JF, js_Ast *stm, int baddr, int caddr)
 		if (jump->type == STM_CONTINUE)
 			labelto(J, F, jump->inst, caddr);
 		js_free(J, jump);
-		jump = next;
+		stm->jumps = jump = next;
 	}
-	stm->jumps = NULL;
 }
 
 static int isloop(enum js_AstType T)
@@ -3725,7 +3800,14 @@ js_Function *jsC_compilescript(js_State *J, js_Ast *prog, int default_strict)
 	return newfun(J, prog ? prog->line : 0, NULL, NULL, prog, 1, default_strict, 0);
 }
 
+/* END: mujs/jscompile.c */
 
+
+/* BEGIN: mujs/jsdate.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #include <time.h>
@@ -4588,9 +4670,16 @@ void jsB_initdate(js_State *J)
 	js_defglobal(J, "Date", JS_DONTENUM);
 }
 
+/* END: mujs/jsdate.c */
 
 
+/* BEGIN: mujs/jsdtoa.c */
 /* Locale-independent implementations of string <-> double conversions. */
+
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #if defined(_MSC_VER) && (_MSC_VER < 1700) /* VS2012 has stdint.h */
@@ -5339,7 +5428,14 @@ done:
 	return fraction;
 }
 
+/* END: mujs/jsdtoa.c */
 
+
+/* BEGIN: mujs/jserror.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #define QQ(X) #X
@@ -5395,6 +5491,13 @@ static void Ep_toString(js_State *J)
 	}
 }
 
+static void Ep_get_stack(js_State *J)
+{
+	Ep_toString(J);
+	js_getproperty(J, 0, "stackTrace");
+	js_concat(J);
+}
+
 static int jsB_ErrorX(js_State *J, js_Object *prototype)
 {
 	js_pushobject(J, jsV_newobject(J, JS_CERROR, prototype));
@@ -5447,8 +5550,13 @@ void jsB_initerror(js_State *J)
 {
 	js_pushobject(J, J->Error_prototype);
 	{
-			jsB_props(J, "name", "Error");
-			jsB_propf(J, "Error.prototype.toString", Ep_toString, 0);
+		jsB_props(J, "name", "Error");
+		jsB_propf(J, "Error.prototype.toString", Ep_toString, 0);
+		jsB_props(J, "message", "");
+
+		js_newcfunction(J, Ep_get_stack, "stack", 0);
+		js_pushnull(J);
+		js_defaccessor(J, -3, "stack", JS_READONLY | JS_DONTENUM | JS_DONTCONF);
 	}
 	js_newcconstructor(J, jsB_Error, jsB_Error, "Error", 1);
 	js_defglobal(J, "Error", JS_DONTENUM);
@@ -5469,7 +5577,14 @@ void jsB_initerror(js_State *J)
 	#undef IERROR
 }
 
+/* END: mujs/jserror.c */
 
+
+/* BEGIN: mujs/jsfunction.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 static void jsB_Function(js_State *J)
@@ -5702,7 +5817,19 @@ void jsB_initfunction(js_State *J)
 	js_defglobal(J, "Function", JS_DONTENUM);
 }
 
+/* END: mujs/jsfunction.c */
 
+
+/* BEGIN: mujs/jsgc.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/regexp.h */
+/* Already included: mujs/regexp.h */
+/* END: mujs/regexp.h */
 
 
 static void jsG_freeenvironment(js_State *J, js_Environment *env)
@@ -5987,7 +6114,14 @@ void js_freestate(js_State *J)
 	J->alloc(J->actx, J, 0);
 }
 
+/* END: mujs/jsgc.c */
 
+
+/* BEGIN: mujs/jsintern.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 /* Dynamically grown string buffer */
@@ -6126,9 +6260,17 @@ const char *js_intern(js_State *J, const char *s)
 	return result;
 }
 
+/* END: mujs/jsintern.c */
 
 
+/* BEGIN: mujs/jslex.c */
 
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
 /*
  * The authors of this software are Rob Pike and Ken Thompson.
  *              Copyright (c) 2002 by Lucent Technologies.
@@ -6182,6 +6324,7 @@ const Rune*	toupperrune_full(Rune c);
 
 #endif
 
+/* END: mujs/utf.h */
 
 
 JS_NORETURN static void jsY_error(js_State *J, const char *fmt, ...) JS_PRINTFLIKE(2,3);
@@ -6285,7 +6428,7 @@ static int jsY_findkeyword(js_State *J, const char *s)
 		J->text = keywords[i];
 		return TK_BREAK + i; /* first keyword + i */
 	}
-	J->text = js_intern(J, s);
+	J->text = s;
 	return TK_IDENTIFIER;
 }
 
@@ -6387,14 +6530,15 @@ static void textinit(js_State *J)
 
 static void textpush(js_State *J, Rune c)
 {
-	int n;
+	int n, newcap;
 	if (c == EOF)
 		n = 1;
 	else
 		n = runelen(c);
 	if (J->lexbuf.len + n > J->lexbuf.cap) {
-		J->lexbuf.cap = J->lexbuf.cap * 2;
-		J->lexbuf.text = js_realloc(J, J->lexbuf.text, J->lexbuf.cap);
+		newcap = J->lexbuf.cap * 2;
+		J->lexbuf.text = js_realloc(J, J->lexbuf.text, newcap);
+		J->lexbuf.cap = newcap;
 	}
 	if (c == EOF)
 		J->lexbuf.text[J->lexbuf.len++] = 0;
@@ -6632,7 +6776,7 @@ static int lexstring(js_State *J)
 
 	s = textend(J);
 
-	J->text = js_intern(J, s);
+	J->text = s;
 	return TK_STRING;
 }
 
@@ -6659,7 +6803,7 @@ static int isregexpcontext(int last)
 static int lexregexp(js_State *J)
 {
 	const char *s;
-	int g, m, i;
+	int g, m, i, flags;
 	int inclass = 0;
 
 	/* already consumed initial '/' */
@@ -6706,11 +6850,13 @@ static int lexregexp(js_State *J)
 	if (g > 1 || i > 1 || m > 1)
 		jsY_error(J, "duplicated flag in regular expression");
 
-	J->text = js_intern(J, s);
-	J->number = 0;
-	if (g) J->number += JS_REGEXP_G;
-	if (i) J->number += JS_REGEXP_I;
-	if (m) J->number += JS_REGEXP_M;
+	J->text = s;
+
+	flags = 0;
+	if (g) flags |= JS_REGEXP_G;
+	if (i) flags |= JS_REGEXP_I;
+	if (m) flags |= JS_REGEXP_M;
+	J->number = flags;
 	return TK_REGEXP;
 }
 
@@ -7011,7 +7157,7 @@ static int lexjsonstring(js_State *J)
 
 	s = textend(J);
 
-	J->text = js_intern(J, s);
+	J->text = s;
 	return TK_STRING;
 }
 
@@ -7060,7 +7206,14 @@ int jsY_lexjson(js_State *J)
 	}
 }
 
+/* END: mujs/jslex.c */
 
+
+/* BEGIN: mujs/jsmath.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #if defined(_MSC_VER) && (_MSC_VER < 1700) /* VS2012 has stdint.h */
@@ -7256,7 +7409,14 @@ void jsB_initmath(js_State *J)
 	js_defglobal(J, "Math", JS_DONTENUM);
 }
 
+/* END: mujs/jsmath.c */
 
+
+/* BEGIN: mujs/jsnumber.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #if defined(_MSC_VER) && (_MSC_VER < 1700) /* VS2012 has stdint.h */
@@ -7456,7 +7616,14 @@ void jsB_initnumber(js_State *J)
 	js_defglobal(J, "Number", JS_DONTENUM);
 }
 
+/* END: mujs/jsnumber.c */
 
+
+/* BEGIN: mujs/jsobject.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 static void jsB_new_Object(js_State *J)
@@ -7739,51 +7906,59 @@ static void O_defineProperty(js_State *J)
 	js_copy(J, 1);
 }
 
-static void O_defineProperties_walk(js_State *J, js_Property *ref)
+static int O_defineProperties_walk(js_State *J, js_Property *ref, int i)
 {
 	if (ref->left->level)
-		O_defineProperties_walk(J, ref->left);
+		i = O_defineProperties_walk(J, ref->left, i);
 	if (!(ref->atts & JS_DONTENUM)) {
-		js_pushvalue(J, ref->value);
-		ToPropertyDescriptor(J, js_toobject(J, 1), ref->name, js_toobject(J, -1));
-		js_pop(J, 1);
+		if (ref->value.t.type != JS_TOBJECT)
+			js_typeerror(J, "not an object");
+		js_pushstring(J, ref->name);
+		js_setindex(J, -2, i++);
 	}
 	if (ref->right->level)
-		O_defineProperties_walk(J, ref->right);
+		i = O_defineProperties_walk(J, ref->right, i);
+	return i;
+}
+
+static void O_defineProperties_imp(js_State *J, js_Object *obj)
+{
+	js_Object *props;
+	const char *name;
+	int i, n;
+
+	if (!js_isobject(J, 2)) js_typeerror(J, "not an object");
+
+	props = js_toobject(J, 2);
+	if (props->properties->level) {
+		js_newarray(J);
+		n = O_defineProperties_walk(J, props->properties, 0);
+		for (i = 0; i < n; ++i) {
+			js_getindex(J, -1, i);
+			name = js_tostring(J, -1);
+			if (js_hasproperty(J, 2, name)) {
+				ToPropertyDescriptor(J, obj, name, js_toobject(J, -1));
+				js_pop(J, 1);
+			}
+			js_pop(J, 1);
+		}
+		js_pop(J, 1);
+	}
 }
 
 static void O_defineProperties(js_State *J)
 {
-	js_Object *props;
-
+	js_Object *obj;
 	if (!js_isobject(J, 1)) js_typeerror(J, "not an object");
-	if (!js_isobject(J, 2)) js_typeerror(J, "not an object");
-
-	props = js_toobject(J, 2);
-	if (props->properties->level)
-		O_defineProperties_walk(J, props->properties);
-
+	obj = js_toobject(J, 1);
+	O_defineProperties_imp(J, obj);
 	js_copy(J, 1);
-}
-
-static void O_create_walk(js_State *J, js_Object *obj, js_Property *ref)
-{
-	if (ref->left->level)
-		O_create_walk(J, obj, ref->left);
-	if (!(ref->atts & JS_DONTENUM)) {
-		if (ref->value.t.type != JS_TOBJECT)
-			js_typeerror(J, "not an object");
-		ToPropertyDescriptor(J, obj, ref->name, ref->value.u.object);
-	}
-	if (ref->right->level)
-		O_create_walk(J, obj, ref->right);
 }
 
 static void O_create(js_State *J)
 {
 	js_Object *obj;
 	js_Object *proto;
-	js_Object *props;
 
 	if (js_isobject(J, 1))
 		proto = js_toobject(J, 1);
@@ -7796,11 +7971,7 @@ static void O_create(js_State *J)
 	js_pushobject(J, obj);
 
 	if (js_isdefined(J, 2)) {
-		if (!js_isobject(J, 2))
-			js_typeerror(J, "not an object");
-		props = js_toobject(J, 2);
-		if (props->properties->level)
-			O_create_walk(J, obj, props->properties);
+		O_defineProperties_imp(J, obj);
 	}
 }
 
@@ -8018,7 +8189,19 @@ void jsB_initobject(js_State *J)
 	js_defglobal(J, "Object", JS_DONTENUM);
 }
 
+/* END: mujs/jsobject.c */
 
+
+/* BEGIN: mujs/json.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
 
 
 int js_isnumberobject(js_State *J, int idx)
@@ -8065,7 +8248,6 @@ static void jsonexpect(js_State *J, int t)
 static void jsonvalue(js_State *J)
 {
 	int i;
-	const char *name;
 
 	switch (J->lookahead) {
 	case TK_STRING:
@@ -8086,11 +8268,12 @@ static void jsonvalue(js_State *J)
 		do {
 			if (J->lookahead != TK_STRING)
 				js_syntaxerror(J, "JSON: unexpected token: %s (expected string)", jsY_tokenstring(J->lookahead));
-			name = J->text;
+			js_pushstring(J, J->text);
 			jsonnext(J);
 			jsonexpect(J, ':');
 			jsonvalue(J);
-			js_setproperty(J, -2, name);
+			js_setproperty(J, -3, js_tostring(J, -2));
+			js_pop(J, 1);
 		} while (jsonaccept(J, ','));
 		jsonexpect(J, '}');
 		break;
@@ -8441,7 +8624,14 @@ void jsB_initjson(js_State *J)
 	js_defglobal(J, "JSON", JS_DONTENUM);
 }
 
+/* END: mujs/json.c */
 
+
+/* BEGIN: mujs/jsparse.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #define LIST(h)			jsP_newnode(J, AST_LIST, 0, h, 0, 0, 0)
@@ -8543,7 +8733,7 @@ static js_Ast *jsP_list(js_Ast *head)
 static js_Ast *jsP_newstrnode(js_State *J, enum js_AstType type, const char *s)
 {
 	js_Ast *node = jsP_newnode(J, type, J->lexline, 0, 0, 0, 0);
-	node->string = s;
+	node->string = js_intern(J, s);
 	return node;
 }
 
@@ -9508,7 +9698,14 @@ js_Ast *jsP_parsefunction(js_State *J, const char *filename, const char *params,
 	return EXP3(FUN, NULL, p, jsP_parse(J, filename, body));
 }
 
+/* END: mujs/jsparse.c */
 
+
+/* BEGIN: mujs/jsproperty.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #include <assert.h>
@@ -9851,7 +10048,19 @@ void jsV_resizearray(js_State *J, js_Object *obj, int newlen)
 	obj->u.a.length = newlen;
 }
 
+/* END: mujs/jsproperty.c */
 
+
+/* BEGIN: mujs/jsregexp.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/regexp.h */
+/* Already included: mujs/regexp.h */
+/* END: mujs/regexp.h */
 
 
 static char *escaperegexp(js_State *J, const char *pattern) {
@@ -9913,16 +10122,20 @@ void js_RegExp_prototype_exec(js_State *J, js_Regexp *re, const char *text)
 	haystack = text;
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
-		if (re->last > strlen(haystack)) {
+		if ((size_t)re->last > strlen(haystack)) {
 			re->last = 0;
 			js_pushnull(J);
 			return;
 		}
 		if (re->last > 0) {
 			haystack = text + re->last;
-			opts |= REG_NOTBOL;
+			if (!(re->flags & JS_REGEXP_M) || haystack[-1] != '\n')
+				opts |= REG_NOTBOL;
 		}
 	}
+
+	if (J->runlimit)
+		opts |= REG_RUNAWAY;
 
 	result = js_regexec(re->prog, haystack, &m, opts);
 	if (result < 0)
@@ -9961,16 +10174,20 @@ static void Rp_test(js_State *J)
 
 	opts = 0;
 	if (re->flags & JS_REGEXP_G) {
-		if (re->last > strlen(text)) {
+		if ((size_t)re->last > strlen(text)) {
 			re->last = 0;
 			js_pushboolean(J, 0);
 			return;
 		}
 		if (re->last > 0) {
 			text += re->last;
-			opts |= REG_NOTBOL;
+			if (!(re->flags & JS_REGEXP_M) || text[-1] != '\n')
+				opts |= REG_NOTBOL;
 		}
 	}
+
+	if (J->runlimit)
+		opts |= REG_RUNAWAY;
 
 	result = js_regexec(re->prog, text, &m, opts);
 	if (result < 0)
@@ -10084,7 +10301,19 @@ void jsB_initregexp(js_State *J)
 	js_defglobal(J, "RegExp", JS_DONTENUM);
 }
 
+/* END: mujs/jsregexp.c */
 
+
+/* BEGIN: mujs/jsrepr.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
 
 
 static void reprvalue(js_State *J, js_Buffer **sb);
@@ -10370,7 +10599,19 @@ const char *js_tryrepr(js_State *J, int idx, const char *error)
 	return s;
 }
 
+/* END: mujs/jsrepr.c */
 
+
+/* BEGIN: mujs/jsrun.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
 
 
 #include <assert.h>
@@ -10407,9 +10648,29 @@ static void js_outofmemory(js_State *J)
 	js_throw(J);
 }
 
+static void js_runlimit(js_State *J)
+{
+	STACK[TOP].t.type = JS_TLITSTR;
+	STACK[TOP].u.litstr = "script ran too long";
+	++TOP;
+	js_throw(J);
+}
+
+void js_setlimit(js_State *J, int runlimit, int memlimit)
+{
+	J->runlimit = runlimit;
+	J->memlimit = memlimit;
+}
+
 void *js_malloc(js_State *J, int size)
 {
-	void *ptr = J->alloc(J->actx, NULL, size);
+	void *ptr;
+	if (J->memlimit > 0) {
+		if (size >= J->memlimit)
+			js_outofmemory(J);
+		J->memlimit -= size;
+	}
+	ptr = J->alloc(J->actx, NULL, size);
 	if (!ptr)
 		js_outofmemory(J);
 	return ptr;
@@ -10417,6 +10678,12 @@ void *js_malloc(js_State *J, int size)
 
 void *js_realloc(js_State *J, void *ptr, int size)
 {
+	if (J->memlimit > 0) {
+		// TODO: track released memory
+		if (size >= J->memlimit)
+			js_outofmemory(J);
+		J->memlimit -= size;
+	}
 	ptr = J->alloc(J->actx, ptr, size);
 	if (!ptr)
 		js_outofmemory(J);
@@ -10433,6 +10700,7 @@ char *js_strdup(js_State *J, const char *s)
 
 void js_free(js_State *J, void *ptr)
 {
+	// TODO: track released memory (J->memlimit)
 	J->alloc(J->actx, ptr, 0);
 }
 
@@ -10890,10 +11158,13 @@ static void js_pushrune(js_State *J, Rune rune)
 void jsR_unflattenarray(js_State *J, js_Object *obj) {
 	if (obj->type == JS_CARRAY && obj->u.a.simple) {
 		js_Property *ref;
-		int i;
+		volatile int i;
+		int k;
 		char name[32];
 		if (js_try(J)) {
-			obj->properties = NULL;
+			/* delete any array entries that were migrated to the property tree */
+			for (k = 0; k < i; ++k)
+				jsV_delproperty(J, obj, js_itoa(name, i));
 			js_throw(J);
 		}
 		for (i = 0; i < obj->u.a.flat_length; ++i) {
@@ -11015,6 +11286,7 @@ static void jsR_getindex(js_State *J, js_Object *obj, int k)
 static void jsR_setarrayindex(js_State *J, js_Object *obj, int k, js_Value *value)
 {
 	int newlen = k + 1;
+	assert(obj->type == JS_CARRAY);
 	assert(obj->u.a.simple);
 	assert(k >= 0);
 	if (newlen > JS_ARRAYLIMIT)
@@ -11634,6 +11906,7 @@ static void jsR_pushtrace(js_State *J, const char *name, const char *file, int l
 	if (J->tracetop + 1 == JS_ENVLIMIT)
 		js_error(J, "call stack overflow");
 	++J->tracetop;
+	J->trace[J->tracetop].stack = J->bot;
 	J->trace[J->tracetop].name = name;
 	J->trace[J->tracetop].file = file;
 	J->trace[J->tracetop].line = line;
@@ -11910,8 +12183,10 @@ static int jsR_isindex(js_State *J, int idx, int *k)
 {
 	js_Value *v = stackidx(J, idx);
 	if (v->t.type == JS_TNUMBER) {
-		*k = v->u.number;
-		return *k == v->u.number && *k >= 0;
+		if (v->u.number >= 0 && v->u.number <= INT_MAX) {
+			*k = v->u.number;
+			return *k == v->u.number;
+		}
 	}
 	return 0;
 }
@@ -11919,7 +12194,7 @@ static int jsR_isindex(js_State *J, int idx, int *k)
 static void jsR_run(js_State *J, js_Function *F)
 {
 	js_Function **FT = F->funtab;
-	const char **VT = F->vartab-1;
+	const char **VT = F->vartab ? F->vartab - 1 : NULL;
 	int lightweight = F->lightweight;
 	js_Instruction *pcstart = F->code;
 	js_Instruction *pc = F->code;
@@ -11943,6 +12218,12 @@ static void jsR_run(js_State *J, js_Function *F)
 	pc += sizeof(str) / sizeof(*pc)
 
 	while (1) {
+		if (J->runlimit > 0) {
+			if (J->runlimit == 1)
+				js_runlimit(J);
+			--J->runlimit;
+		}
+
 		if (J->gccounter > J->gcthresh)
 			js_gc(J, 0);
 
@@ -12434,7 +12715,14 @@ static void jsR_run(js_State *J, js_Function *F)
 	}
 }
 
+/* END: mujs/jsrun.c */
 
+
+/* BEGIN: mujs/jsstate.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
 
 
 #include <assert.h>
@@ -12770,12 +13058,32 @@ js_State *js_newstate(js_Alloc alloc, void *actx, int flags)
 	return J;
 }
 
+/* END: mujs/jsstate.c */
 
+
+/* BEGIN: mujs/jsstring.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
+
+
+/* BEGIN: mujs/regexp.h */
+/* Already included: mujs/regexp.h */
+/* END: mujs/regexp.h */
 
 
 static int js_doregexec(js_State *J, Reprog *prog, const char *string, Resub *sub, int eflags)
 {
-	int result = js_regexec(prog, string, sub, eflags);
+	int result;
+	if (J->runlimit)
+		eflags |= REG_RUNAWAY;
+	result = js_regexec(prog, string, sub, eflags);
 	if (result < 0)
 		js_error(J, "regexec failed");
 	return result;
@@ -12847,13 +13155,18 @@ int js_utfptrtoidx(const char *s, const char *p)
 	int i = 0;
 	while (s < p) {
 		if (*(unsigned char *)s < Runeself)
+		{
 			++s;
+			++i;
+		}
 		else
+		{
 			s += chartorune(&rune, s);
-		if (rune >= 0x10000)
-			i += 2;
-		else
-			i += 1;
+			if (rune >= 0x10000)
+				i += 2;
+			else
+				i += 1;
+		}
 	}
 	return i;
 }
@@ -13059,8 +13372,10 @@ static void Sp_slice(js_State *J)
 
 	if (s < e)
 		Sp_substring_imp(J, str, s, e - s);
-	else
+	else if (s > e)
 		Sp_substring_imp(J, str, e, s - e);
+	else
+		js_pushliteral(J, "");
 }
 
 static void Sp_substring(js_State *J)
@@ -13075,8 +13390,10 @@ static void Sp_substring(js_State *J)
 
 	if (s < e)
 		Sp_substring_imp(J, str, s, e - s);
-	else
+	else if (s > e)
 		Sp_substring_imp(J, str, e, s - e);
+	else
+		js_pushliteral(J, "");
 }
 
 static void Sp_toLowerCase(js_State *J)
@@ -13179,6 +13496,11 @@ static void Sp_toUpperCase(js_State *J)
 	js_free(J, dst);
 }
 
+static int isbol(js_Regexp *re, const char *text, const char *a)
+{
+	return a == text || ((re->flags & JS_REGEXP_M) && a[-1] == '\n');
+}
+
 static int istrim(int c)
 {
 	return c == 0x9 || c == 0xB || c == 0xC || c == 0x20 || c == 0xA0 || c == 0xFEFF ||
@@ -13229,6 +13551,7 @@ static void Sp_match(js_State *J)
 	int len;
 	const char *a, *b, *c, *e;
 	Resub m;
+	Rune rune;
 
 	text = checkstring(J, 0);
 
@@ -13253,7 +13576,7 @@ static void Sp_match(js_State *J)
 	a = text;
 	e = text + strlen(text);
 	while (a <= e) {
-		if (js_doregexec(J, re->prog, a, &m, a > text ? REG_NOTBOL : 0))
+		if (js_doregexec(J, re->prog, a, &m, isbol(re, text, a) ? 0 : REG_NOTBOL))
 			break;
 
 		b = m.sub[0].sp;
@@ -13264,7 +13587,7 @@ static void Sp_match(js_State *J)
 
 		a = c;
 		if (c - b == 0)
-			++a;
+			a += chartorune(&rune, a);
 	}
 
 	if (len == 0) {
@@ -13299,12 +13622,12 @@ static void Sp_search(js_State *J)
 static void Sp_replace_regexp(js_State *J)
 {
 	js_Regexp *re;
-	const char *source, *s, *r;
+	const char *source, *source0, *s, *r;
 	js_Buffer *sb = NULL;
 	int n, x;
 	Resub m;
 
-	source = checkstring(J, 0);
+	source = source0 = checkstring(J, 0);
 	re = js_toregexp(J, 1);
 
 	if (js_doregexec(J, re->prog, source, &m, 0)) {
@@ -13313,6 +13636,11 @@ static void Sp_replace_regexp(js_State *J)
 	}
 
 	re->last = 0;
+
+	if (js_try(J)) {
+		js_free(J, sb);
+		js_throw(J);
+	}
 
 loop:
 	s = m.sub[0].sp;
@@ -13339,7 +13667,7 @@ loop:
 				case 0: --r; /* end of string; back up */
 				/* fallthrough */
 				case '$': js_putc(J, &sb, '$'); break;
-				case '`': js_putm(J, &sb, source, s); break;
+				case '`': js_putm(J, &sb, source0, s); break;
 				case '\'': js_puts(J, &sb, s + n); break;
 				case '&':
 					js_putm(J, &sb, s, s + n);
@@ -13381,7 +13709,7 @@ loop:
 			else
 				goto end;
 		}
-		if (!js_doregexec(J, re->prog, source, &m, REG_NOTBOL))
+		if (!js_doregexec(J, re->prog, source, &m, isbol(re, source0, source) ? 0 : REG_NOTBOL))
 			goto loop;
 	}
 
@@ -13389,10 +13717,6 @@ end:
 	js_puts(J, &sb, s + n);
 	js_putc(J, &sb, 0);
 
-	if (js_try(J)) {
-		js_free(J, sb);
-		js_throw(J);
-	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	js_free(J, sb);
@@ -13413,6 +13737,11 @@ static void Sp_replace_string(js_State *J)
 		return;
 	}
 	n = strlen(needle);
+
+	if (js_try(J)) {
+		js_free(J, sb);
+		js_throw(J);
+	}
 
 	if (js_iscallable(J, 2)) {
 		js_copy(J, 2);
@@ -13450,10 +13779,6 @@ static void Sp_replace_string(js_State *J)
 		js_putc(J, &sb, 0);
 	}
 
-	if (js_try(J)) {
-		js_free(J, sb);
-		js_throw(J);
-	}
 	js_pushstring(J, sb ? sb->s : "");
 	js_endtry(J);
 	js_free(J, sb);
@@ -13474,6 +13799,7 @@ static void Sp_split_regexp(js_State *J)
 	int limit, len, k;
 	const char *p, *a, *b, *c, *e;
 	Resub m;
+	Rune rune;
 
 	text = checkstring(J, 0);
 	re = js_toregexp(J, 1);
@@ -13498,7 +13824,7 @@ static void Sp_split_regexp(js_State *J)
 
 	p = a = text;
 	while (a < e) {
-		if (js_doregexec(J, re->prog, a, &m, a > text ? REG_NOTBOL : 0))
+		if (js_doregexec(J, re->prog, a, &m, isbol(re, text, a) ? 0 : REG_NOTBOL))
 			break; /* no match */
 
 		b = m.sub[0].sp;
@@ -13506,7 +13832,7 @@ static void Sp_split_regexp(js_State *J)
 
 		/* empty string at end of last match */
 		if (b == c && b == p) {
-			++a;
+			a += chartorune(&rune, a);
 			continue;
 		}
 
@@ -13618,7 +13944,19 @@ void jsB_initstring(js_State *J)
 	js_defglobal(J, "String", JS_DONTENUM);
 }
 
+/* END: mujs/jsstring.c */
 
+
+/* BEGIN: mujs/jsvalue.c */
+
+/* BEGIN: mujs/jsi.h */
+/* Already included: mujs/jsi.h */
+/* END: mujs/jsi.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
 
 
 #define JSV_ISSTRING(v) (v->t.type==JS_TSHRSTR || v->t.type==JS_TMEMSTR || v->t.type==JS_TLITSTR)
@@ -13790,7 +14128,7 @@ const char *js_itoa(char *out, int v)
 	unsigned int a;
 	int i = 0;
 	if (v < 0) {
-		a = -v;
+		a = -(unsigned)v; /* cast to avoid -INT_MIN signed overflow UB */
 		*s++ = '-';
 	} else {
 		a = v;
@@ -14327,13 +14665,25 @@ int js_strictequal(js_State *J)
 	return 0;
 }
 
+/* END: mujs/jsvalue.c */
 
 
+/* BEGIN: mujs/regexp.c */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
 #include <limits.h>
+
+
+/* BEGIN: mujs/regexp.h */
+/* Already included: mujs/regexp.h */
+/* END: mujs/regexp.h */
+
+
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
 
 
 #define emit regemit
@@ -14347,13 +14697,18 @@ int js_strictequal(js_State *J)
 #define REG_MAXPROG (32 << 10)
 #endif
 #ifndef REG_MAXREC
-#define REG_MAXREC 1024
+#define REG_MAXREC 4096
 #endif
 #ifndef REG_MAXSPAN
 #define REG_MAXSPAN 64
 #endif
 #ifndef REG_MAXCLASS
 #define REG_MAXCLASS 128
+#endif
+
+/* Max number of instructions to run if REG_RUNAWAY is set. */
+#ifndef REG_MAXRUN
+#define REG_MAXRUN (1<<20)
 #endif
 
 typedef struct Reclass Reclass;
@@ -14374,6 +14729,7 @@ struct Reprog {
 };
 
 struct cstate {
+	jmp_buf kaboom;
 	Reprog *prog;
 	Renode *pstart, *pend;
 
@@ -14388,7 +14744,6 @@ struct cstate {
 	int yymin, yymax;
 
 	const char *error;
-	jmp_buf kaboom;
 
 	Reclass cclass[REG_MAXCLASS];
 };
@@ -14476,7 +14831,7 @@ static int nextrune(struct cstate *g)
 				g->yychar = '0';
 				return 1;
 			}
-			return 0;
+			return 1;
 		case 'u':
 			if (!g->source[0] || !g->source[1] || !g->source[2] || !g->source[3])
 				die(g, "unterminated escape sequence");
@@ -14488,7 +14843,7 @@ static int nextrune(struct cstate *g)
 				g->yychar = '0';
 				return 1;
 			}
-			return 0;
+			return 1;
 		case 0:
 			g->yychar = '0';
 			return 1;
@@ -14983,9 +15338,9 @@ struct Reinst {
 	Reinst *y;
 };
 
-static int count(struct cstate *g, Renode *node, int depth)
+static size_t count(struct cstate *g, Renode *node, int depth)
 {
-	int min, max, n;
+	size_t min, max, n;
 	if (!node) return 0;
 	if (++depth > REG_MAXREC) die(g, "stack overflow");
 	switch (node->type) {
@@ -14998,7 +15353,7 @@ static int count(struct cstate *g, Renode *node, int depth)
 		if (min == max) n = count(g, node->x, depth) * min;
 		else if (max < REPINF) n = count(g, node->x, depth) * max + (max - min);
 		else n = count(g, node->x, depth) * (min + 1) + 2;
-		if (n < 0 || n > REG_MAXPROG) die(g, "program too large");
+		if (n > REG_MAXPROG) die(g, "program too large");
 		return n;
 	case P_PAR: return count(g, node->x, depth) + 2;
 	case P_PLA: return count(g, node->x, depth) + 2;
@@ -15224,7 +15579,8 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 	struct cstate g;
 	Renode *node;
 	Reinst *split, *jump;
-	int i, n;
+	int i;
+	size_t n;
 
 	g.pstart = NULL;
 	g.prog = NULL;
@@ -15276,7 +15632,7 @@ Reprog *regcompx(void *(*alloc)(void *ctx, void *p, int n), void *ctx,
 #endif
 
 	n = 6 + count(&g, node, 0);
-	if (n < 0 || n > REG_MAXPROG)
+	if (n > REG_MAXPROG)
 		die(&g, "program too large");
 
 	g.prog->nsub = g.nsub;
@@ -15393,7 +15749,7 @@ static int strncmpcanon(const char *a, const char *b, int n)
 	return 0;
 }
 
-static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *out, int depth)
+static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *out, int depth, int *runaway)
 {
 	Resub scratch;
 	int result;
@@ -15405,6 +15761,9 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 		return -1;
 
 	for (;;) {
+		if (flags & REG_RUNAWAY)
+			if (++(*runaway) >= REG_MAXRUN)
+				return -1;
 		switch (pc->opcode) {
 		case I_END:
 			return 0;
@@ -15413,7 +15772,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 			break;
 		case I_SPLIT:
 			scratch = *out;
-			result = match(pc->x, sp, bol, flags, &scratch, depth+1);
+			result = match(pc->x, sp, bol, flags, &scratch, depth+1, runaway);
 			if (result == -1)
 				return -1;
 			if (result == 0) {
@@ -15424,7 +15783,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 			break;
 
 		case I_PLA:
-			result = match(pc->x, sp, bol, flags, out, depth+1);
+			result = match(pc->x, sp, bol, flags, out, depth+1, runaway);
 			if (result == -1)
 				return -1;
 			if (result == 1)
@@ -15433,7 +15792,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 			break;
 		case I_NLA:
 			scratch = *out;
-			result = match(pc->x, sp, bol, flags, &scratch, depth+1);
+			result = match(pc->x, sp, bol, flags, &scratch, depth+1, runaway);
 			if (result == -1)
 				return -1;
 			if (result == 0)
@@ -15556,6 +15915,7 @@ static int match(Reinst *pc, const char *sp, const char *bol, int flags, Resub *
 int regexec(Reprog *prog, const char *sp, Resub *sub, int eflags)
 {
 	Resub scratch;
+	int runaway = 0;
 	int i;
 
 	if (!sub)
@@ -15565,7 +15925,7 @@ int regexec(Reprog *prog, const char *sp, Resub *sub, int eflags)
 	for (i = 0; i < REG_MAXSUB; ++i)
 		sub->sub[i].sp = sub->sub[i].ep = NULL;
 
-	return match(prog->start, sp, sp, prog->flags | eflags, sub, 0);
+	return match(prog->start, sp, sp, prog->flags | eflags, sub, 0, &runaway);
 }
 
 #ifdef TEST
@@ -15587,7 +15947,7 @@ int main(int argc, char **argv)
 		if (argc > 2) {
 			s = argv[2];
 			printf("nsub = %d\n", p->nsub);
-			if (!regexec(p, s, &m, 0)) {
+			if (!regexec(p, s, &m, REG_RUNAWAY)) {
 				for (i = 0; i < m.nsub; ++i) {
 					int n = m.sub[i].ep - m.sub[i].sp;
 					if (n > 0)
@@ -15605,8 +15965,10 @@ int main(int argc, char **argv)
 }
 #endif
 
+/* END: mujs/regexp.c */
 
 
+/* BEGIN: mujs/utf.c */
 /*
  * The authors of this software are Rob Pike and Ken Thompson.
  *              Copyright (c) 2002 by Lucent Technologies.
@@ -15624,6 +15986,12 @@ int main(int argc, char **argv)
 #include <string.h>
 
 
+/* BEGIN: mujs/utf.h */
+/* Already included: mujs/utf.h */
+/* END: mujs/utf.h */
+
+
+/* BEGIN: mujs/utfdata.h */
 /* This file was automatically created from UnicodeData.txt */
 
 static const Rune ucd_alpha2[] = {
@@ -17834,6 +18202,7 @@ static const Rune ucd_toupper_full[] = {
 0xfb17,0x544,0x53d,0x0,0x0,
 };
 
+/* END: mujs/utfdata.h */
 
 
 #define nelem(a) (int)(sizeof (a) / sizeof (a)[0])
@@ -18123,5 +18492,5 @@ toupperrune_full(Rune c)
 	return NULL;
 }
 
-
+/* END: mujs/utf.c */
 

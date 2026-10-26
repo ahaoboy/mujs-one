@@ -1,14 +1,3 @@
-#![feature(c_variadic, extern_types, label_break_value)]
-#![allow(
-    dead_code,
-    mutable_transmutes,
-    non_camel_case_types,
-    non_snake_case,
-    non_upper_case_globals,
-    unused_assignments,
-    unused_mut
-)]
-
 use mujs_one::{
     js_State, js_dostring, js_newcfunction, js_newstate, js_pushundefined, js_setglobal,
     js_tostring,
